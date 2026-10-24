@@ -1,0 +1,13 @@
+[package]
+name = "loglense-cli"
+description = "loglense command-line interface"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "loglense"
+path = "src/main.rs"
+
+[dependencies]
+clap.workspace = true

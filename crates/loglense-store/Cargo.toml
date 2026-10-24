@@ -1,0 +1,6 @@
+[package]
+name = "loglense-store"
+description = "loglense project-local .loglense/ run store: discovery, atomic metadata, tolerant readers"
+version.workspace = true
+edition.workspace = true
+license.workspace = true

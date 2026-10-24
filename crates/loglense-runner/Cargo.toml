@@ -1,0 +1,6 @@
+[package]
+name = "loglense-runner"
+description = "loglense daemonless detached supervisor owning the wrapped child process"
+version.workspace = true
+edition.workspace = true
+license.workspace = true

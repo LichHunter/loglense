@@ -1,0 +1,5 @@
+/target
+/result
+.devenv
+.direnv
+.omo/

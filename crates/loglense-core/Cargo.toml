@@ -1,0 +1,6 @@
+[package]
+name = "loglense-core"
+description = "loglense core domain types: run ids, events, configuration, template dedup"
+version.workspace = true
+edition.workspace = true
+license.workspace = true

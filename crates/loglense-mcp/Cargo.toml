@@ -1,0 +1,6 @@
+[package]
+name = "loglense-mcp"
+description = "loglense MCP stdio server exposing runs and events to agents"
+version.workspace = true
+edition.workspace = true
+license.workspace = true

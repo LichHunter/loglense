@@ -1,0 +1,28 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/loglense-core",
+    "crates/loglense-parsers",
+    "crates/loglense-store",
+    "crates/loglense-runner",
+    "crates/loglense-mcp",
+    "crates/loglense-cli",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+clap = { version = "4", features = ["derive"] }
+regex = "1"
+time = { version = "0.3", features = ["formatting", "macros"] }
+schemars = "1"
+rmcp = { version = "3.5.1", features = ["server", "transport-io", "schemars", "client"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "process"] }
+tempfile = "3"
+proptest = "1"

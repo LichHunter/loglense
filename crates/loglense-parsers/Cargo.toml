@@ -1,0 +1,6 @@
+[package]
+name = "loglense-parsers"
+description = "loglense two-tier modular log parsing: language bases, tool parsers, TOML packs"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
