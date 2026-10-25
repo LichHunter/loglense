@@ -1,0 +1,79 @@
+[
+  {
+    "seq": 1,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "phase",
+    "message": "========================================== FAILURES ==========================================",
+    "phase": "FAILURES",
+    "lines": [3]
+  },
+  {
+    "seq": 2,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "phase",
+    "message": "________________________________ test_prints_traceback ________________________________",
+    "phase": "test_prints_traceback",
+    "lines": [4]
+  },
+  {
+    "seq": 3,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "phase",
+    "message": "--------------------------------- Captured stdout call ---------------------------------",
+    "phase": "Captured stdout call",
+    "lines": [6]
+  },
+  {
+    "seq": 4,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "line",
+    "message": "",
+    "lines": [7, 8, 9, 10],
+    "frames": ["/app/lib.py:10 in run", "/app/lib.py:4 in do_thing"]
+  },
+  {
+    "seq": 5,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "phase",
+    "message": "------------------------------ short test summary info ------------------------------",
+    "phase": "short test summary info",
+    "lines": [11]
+  },
+  {
+    "seq": 6,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "test",
+    "message": "FAILED tests/test_prints.py::test_prints_traceback - assert False",
+    "lines": [12],
+    "test": {
+      "name": "tests/test_prints.py::test_prints_traceback",
+      "outcome": "failed"
+    }
+  },
+  {
+    "seq": 7,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "summary",
+    "message": "1 failed, 1 passed in 0.03s",
+    "lines": [13],
+    "test": {
+      "name": "pytest",
+      "outcome": "failed",
+      "duration_ms": 30
+    }
+  }
+]

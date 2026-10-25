@@ -1,0 +1,9 @@
+# captured: python3 app.py, CPython 3.11 (/tmp/opencode/t9-python-raw), exit 1, 2026-10-25
+Traceback (most recent call last):
+  File "/tmp/opencode/t9-python-raw/app.py", line 7, in <module>
+    run()
+  File "/tmp/opencode/t9-python-raw/app.py", line 5, in run
+    do_thing()
+  File "/tmp/opencode/t9-python-raw/app.py", line 2, in do_thing
+    raise ValueError("boom from do_thing")
+ValueError: boom from do_thing

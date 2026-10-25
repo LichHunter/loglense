@@ -1,0 +1,8 @@
+# crafted: adversarial — a second traceback header arrives with no closer between blocks
+Traceback (most recent call last):
+  File "first.py", line 1, in outer
+Traceback (most recent call last):
+  File "second.py", line 2, in inner
+ValueError: late closer
+Traceback (most recent call last):
+  File "third.py", line 3, in last

@@ -1,0 +1,16 @@
+[
+  {
+    "seq": 1,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "line",
+    "message": "ValueError: boom from do_thing",
+    "lines": [2, 3, 4, 5, 6, 7, 8, 9],
+    "frames": [
+      "/tmp/opencode/t9-python-raw/app.py:7 in <module>",
+      "/tmp/opencode/t9-python-raw/app.py:5 in run",
+      "/tmp/opencode/t9-python-raw/app.py:2 in do_thing"
+    ]
+  }
+]

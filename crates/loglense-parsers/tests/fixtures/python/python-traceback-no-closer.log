@@ -1,0 +1,6 @@
+# crafted: traceback truncated before the exception closer (EOF flush case)
+Traceback (most recent call last):
+  File "worker.py", line 21, in handle
+    process(msg)
+  File "worker.py", line 9, in process
+    return split(msg)

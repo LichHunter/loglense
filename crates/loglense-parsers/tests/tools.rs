@@ -1,12 +1,13 @@
-//! Tool parser wiring (task T8 deliverable e): `maven` registers over the
-//! `java` base, chains order derived-before-base, autodetection prefers
-//! maven on maven logs and java on plain java logs, the java block state
-//! machine claims continuations silently and emits one event per block,
-//! and maven lines interrupting an open block behave per the chain
-//! contract.
+//! Tool parser wiring (tasks T8-T9): every tool registers over its lang
+//! base, chains order derived-before-base, autodetection prefers the tool on
+//! tool logs and the base on plain base logs, the java block state machine
+//! claims continuations silently and emits one event per block, and maven
+//! lines interrupting an open block behave per the chain contract.
 
 use loglense_parsers::bases::java::JavaParser;
+use loglense_parsers::bases::python::PythonParser;
 use loglense_parsers::tools::maven::MavenParser;
+use loglense_parsers::tools::pytest::PytestParser;
 use loglense_parsers::{
     bases, detect_from_sample, tools, FeedOutcome, Kind, LineCtx, Parser, ParserRegistry,
     Registration, Source, Stream,
@@ -17,6 +18,64 @@ fn registry() -> ParserRegistry {
     bases::register(&mut registry);
     tools::register(&mut registry);
     registry
+}
+
+/// First ≤ 50 lines of a golden fixture log — the autodetect sample size
+/// (docs/parsers.md §3.3).
+fn fixture_sample(rel: &str) -> Vec<String> {
+    let path = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/").to_string() + rel;
+    std::fs::read_to_string(&path)
+        .unwrap_or_else(|err| panic!("{path}: {err}"))
+        .lines()
+        .take(50)
+        .map(str::to_string)
+        .collect()
+}
+
+/// Asserts `tool` outscores `base` on the tool's fixture and the registry's
+/// autodetect picks the tool.
+fn assert_tool_beats_base(tool: &dyn Parser, base: &dyn Parser, fixture: &str) {
+    let owned = fixture_sample(fixture);
+    let sample: Vec<&str> = owned.iter().map(String::as_str).collect();
+    let (tool_score, base_score) = (tool.detect(&sample), base.detect(&sample));
+    assert!(
+        tool_score > base_score,
+        "{fixture}: {} {tool_score} must beat {} {base_score}",
+        tool.name(),
+        base.name()
+    );
+    assert_eq!(detect_from_sample(&registry(), &sample), tool.name());
+}
+
+#[test]
+fn every_tool_chains_over_its_lang_base() {
+    let registry = registry();
+    registry
+        .resolve()
+        .expect("all extends targets known, no cycle");
+    for (tool, base) in [("maven", "java"), ("pytest", "python")] {
+        assert_eq!(
+            registry.build_chain(tool).expect("chain").parser_names(),
+            vec![tool, base, "generic"]
+        );
+    }
+}
+
+#[test]
+fn pytest_outscores_python_base_on_pytest_log() {
+    assert_tool_beats_base(&PytestParser, &PythonParser, "pytest/pytest-mixed-run.log");
+}
+
+#[test]
+fn python_base_outscores_pytest_on_plain_traceback() {
+    let owned = fixture_sample("python/python-traceback.log");
+    let sample: Vec<&str> = owned.iter().map(String::as_str).collect();
+    assert!(
+        PythonParser.detect(&sample) >= PytestParser.detect(&sample),
+        "python {} must not lose to pytest {}",
+        PythonParser.detect(&sample),
+        PytestParser.detect(&sample)
+    );
 }
 
 fn ctx(line_no: u64) -> LineCtx {

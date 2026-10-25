@@ -1,0 +1,65 @@
+[
+  {
+    "seq": 1,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "line",
+    "message": "database connection lost",
+    "lines": [2]
+  },
+  {
+    "seq": 2,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "line",
+    "message": "service started",
+    "lines": [3]
+  },
+  {
+    "seq": 3,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "warning",
+    "kind": "line",
+    "message": "disk usage at 85%",
+    "lines": [4]
+  },
+  {
+    "seq": 4,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "debug",
+    "kind": "line",
+    "message": "cache miss",
+    "lines": [5]
+  },
+  {
+    "seq": 5,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "line",
+    "message": "shutting down",
+    "lines": [6]
+  },
+  {
+    "seq": 6,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "line",
+    "message": "timeout after 30s",
+    "lines": [7]
+  },
+  {
+    "seq": 7,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "line",
+    "message": "retrying",
+    "lines": [8]
+  }
+]

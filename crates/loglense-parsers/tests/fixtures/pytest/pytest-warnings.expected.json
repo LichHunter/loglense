@@ -1,0 +1,85 @@
+[
+  {
+    "seq": 1,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "phase",
+    "message": "==================================== ERRORS ====================================",
+    "phase": "ERRORS",
+    "lines": [3]
+  },
+  {
+    "seq": 2,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "test",
+    "message": "_____________________ ERROR at setup of test_needs_fixture _____________________",
+    "lines": [4],
+    "test": {
+      "name": "test_needs_fixture",
+      "outcome": "error"
+    }
+  },
+  {
+    "seq": 3,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "phase",
+    "message": "=============================== warnings summary ===============================",
+    "phase": "warnings summary",
+    "lines": [12]
+  },
+  {
+    "seq": 4,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "warning",
+    "kind": "line",
+    "message": "UserWarning: something looks off",
+    "lines": [14],
+    "source": {
+      "file": "/tmp/opencode/t9-pytest-extra/tests/test_w.py",
+      "line": 4
+    }
+  },
+  {
+    "seq": 5,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "phase",
+    "message": "=========================== short test summary info ============================",
+    "phase": "short test summary info",
+    "lines": [18]
+  },
+  {
+    "seq": 6,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "test",
+    "message": "ERROR tests/test_e.py::test_needs_fixture - ValueError: fixture exploded",
+    "lines": [19],
+    "test": {
+      "name": "tests/test_e.py::test_needs_fixture",
+      "outcome": "error"
+    }
+  },
+  {
+    "seq": 7,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "summary",
+    "message": "2 passed, 1 warning, 1 error in 0.02s",
+    "lines": [20],
+    "test": {
+      "name": "pytest",
+      "outcome": "error",
+      "duration_ms": 20
+    }
+  }
+]

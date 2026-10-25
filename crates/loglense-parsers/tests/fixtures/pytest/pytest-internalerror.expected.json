@@ -1,0 +1,72 @@
+[
+  {
+    "seq": 1,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "phase",
+    "message": "========================================= ERRORS =========================================",
+    "phase": "ERRORS",
+    "lines": [2]
+  },
+  {
+    "seq": 2,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "phase",
+    "message": "______________________ ERROR collecting tests/test_broken.py ______________________",
+    "phase": "ERROR collecting tests/test_broken.py",
+    "lines": [3]
+  },
+  {
+    "seq": 3,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "line",
+    "message": "INTERNALERROR> Traceback (most recent call last):",
+    "lines": [6]
+  },
+  {
+    "seq": 4,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "line",
+    "message": "INTERNALERROR>   File \"/venv/lib/python3.11/site-packages/_pytest/main.py\", line 273, in wrap_session",
+    "lines": [7]
+  },
+  {
+    "seq": 5,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "line",
+    "message": "INTERNALERROR>     session.exitstatus = doit(config, session) or 0",
+    "lines": [8]
+  },
+  {
+    "seq": 6,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "line",
+    "message": "INTERNALERROR> RuntimeError: internal error during run",
+    "lines": [9]
+  },
+  {
+    "seq": 7,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "summary",
+    "message": "1 error in 0.01s",
+    "lines": [12],
+    "test": {
+      "name": "pytest",
+      "outcome": "error",
+      "duration_ms": 10
+    }
+  }
+]

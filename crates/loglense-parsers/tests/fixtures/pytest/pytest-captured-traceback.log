@@ -1,0 +1,13 @@
+# crafted: adversarial — traceback printed to stdout lands in pytest captured output; the embedded python base claims it (documented T9 behavior)
+F.                                                                      [100%]
+========================================== FAILURES ==========================================
+________________________________ test_prints_traceback ________________________________
+
+--------------------------------- Captured stdout call ---------------------------------
+Traceback (most recent call last):
+  File "/app/lib.py", line 10, in run
+    do_thing()
+  File "/app/lib.py", line 4, in do_thing
+------------------------------ short test summary info ------------------------------
+FAILED tests/test_prints.py::test_prints_traceback - assert False
+1 failed, 1 passed in 0.03s

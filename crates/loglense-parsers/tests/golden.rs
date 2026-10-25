@@ -36,6 +36,8 @@ fn parser_for(dir: &str) -> Option<Box<dyn Parser>> {
         "json" => Some(Box::new(loglense_parsers::bases::json::JsonParser)),
         "logfmt" => Some(Box::new(loglense_parsers::bases::logfmt::LogfmtParser)),
         "maven" => Some(Box::new(loglense_parsers::tools::maven::MavenParser)),
+        "python" => Some(Box::new(loglense_parsers::bases::python::PythonParser)),
+        "pytest" => Some(Box::new(loglense_parsers::tools::pytest::PytestParser)),
         _ => None,
     }
 }

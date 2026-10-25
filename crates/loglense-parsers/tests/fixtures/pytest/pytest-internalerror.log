@@ -1,0 +1,12 @@
+# crafted: pytest INTERNALERROR shape (internal marker prefix per pytest docs), not a live capture
+========================================= ERRORS =========================================
+______________________ ERROR collecting tests/test_broken.py ______________________
+ImportError: cannot import name 'missing' from 'helpers'
+
+INTERNALERROR> Traceback (most recent call last):
+INTERNALERROR>   File "/venv/lib/python3.11/site-packages/_pytest/main.py", line 273, in wrap_session
+INTERNALERROR>     session.exitstatus = doit(config, session) or 0
+INTERNALERROR> RuntimeError: internal error during run
+
+!!! Interrupted: 1 error during collection !!!
+============================ 1 error in 0.01s ============================

@@ -7,9 +7,10 @@
 //! [`Parser`](crate::traits::Parser) in `src/tools/<name>.rs`, declare
 //! `pub mod <name>;` here, and add one line to [`register`].
 //!
-//! T8 ships `maven` (extends `java`).
+//! Built-ins: `maven` → `java`, `pytest` → `python`.
 
 pub mod maven;
+pub mod pytest;
 
 use crate::registry::{ParserRegistry, Source};
 
@@ -22,5 +23,11 @@ pub fn register(registry: &mut ParserRegistry) {
         || Box::new(maven::MavenParser),
         Source::Builtin,
         Some("java".to_string()),
+    );
+    registry.register(
+        "pytest",
+        || Box::new(pytest::PytestParser),
+        Source::Builtin,
+        Some("python".to_string()),
     );
 }

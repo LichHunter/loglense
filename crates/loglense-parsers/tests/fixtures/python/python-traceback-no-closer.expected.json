@@ -1,0 +1,12 @@
+[
+  {
+    "seq": 1,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "line",
+    "message": "",
+    "lines": [2, 3, 4, 5, 6],
+    "frames": ["worker.py:21 in handle", "worker.py:9 in process"]
+  }
+]

@@ -1,0 +1,7 @@
+# crafted: negative — prose and foreign formats the python base must not claim
+just some plain text
+error: something failed
+{"level":"error","msg":"json not python"}
+level=error msg=logfmt-not-python
+Exception in thread "main" java.lang.NullPointerException
+the words Traceback (most recent call last): inside prose are not a header

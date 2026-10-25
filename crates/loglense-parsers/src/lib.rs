@@ -9,10 +9,9 @@
 //! - [`pack`] — TOML pack grammar (schema = 1) loader.
 //!
 //! Concrete parsers: [`bases`] ships the format bases `generic`/`json`/
-//! `logfmt` plus the `java` lang base; [`tools`] ships tool parsers that
-//! extend a lang base (`maven` → `java`). Later waves add the remaining
-//! lang bases and tools, registered through [`bases::register`] and
-//! [`tools::register`].
+//! `logfmt` plus the `java`/`python` lang bases; [`tools`] ships tool
+//! parsers that extend a lang base (`maven` → `java`, `pytest` → `python`),
+//! registered through [`bases::register`] and [`tools::register`].
 
 pub mod bases;
 pub mod chain;

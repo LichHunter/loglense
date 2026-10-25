@@ -1,0 +1,20 @@
+# captured: python3 -m pytest --no-header -q (pytest 8.4.2, /tmp/opencode/t9-pytest-extra), exit 1, 2026-10-25
+E..                                                                      [100%]
+==================================== ERRORS ====================================
+_____________________ ERROR at setup of test_needs_fixture _____________________
+
+    @pytest.fixture
+    def broken_fixture():
+>       raise ValueError("fixture exploded")
+E       ValueError: fixture exploded
+
+tests/test_e.py:5: ValueError
+=============================== warnings summary ===============================
+tests/test_w.py::test_warns
+  /tmp/opencode/t9-pytest-extra/tests/test_w.py:4: UserWarning: something looks off
+    warnings.warn("something looks off")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+ERROR tests/test_e.py::test_needs_fixture - ValueError: fixture exploded
+2 passed, 1 warning, 1 error in 0.02s

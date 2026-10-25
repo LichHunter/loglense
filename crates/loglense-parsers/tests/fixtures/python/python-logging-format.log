@@ -1,0 +1,9 @@
+# captured shape: python logging defaults; asctime variant crafted per logging module docs, 2026-10-25
+ERROR:root:database connection lost
+INFO:app.module:service started
+WARNING:root:disk usage at 85%
+DEBUG:app.db:cache miss
+CRITICAL:root:shutting down
+2026-10-25 10:00:00,123 ERROR:app.core:timeout after 30s
+2026-10-25 10:00:00,124 INFO:app.core:retrying
+not a logging line: missing level prefix
