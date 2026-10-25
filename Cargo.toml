@@ -24,5 +24,7 @@ time = { version = "0.3", features = ["formatting", "macros"] }
 schemars = "1"
 rmcp = { version = "3.5.1", features = ["server", "transport-io", "schemars", "client"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "process"] }
+toml = "0.8"
+sha2 = "0.10"
 tempfile = "3"
 proptest = "1"
