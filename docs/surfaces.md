@@ -256,7 +256,7 @@ sequenceDiagram
     participant T as tmux pane (agent's terminal)
 
     A->>M: start_run(cmd, cwd, on_complete = notify tmux --pane …)
-    M->>R: spawn + ack (double-fork handshake)
+    M->>R: spawn + ack (setsid handshake)
     M-->>A: run_id + pid (instant)
     R->>K: exec — pipes spool + parse-on-write
     K-->>R: terminal state

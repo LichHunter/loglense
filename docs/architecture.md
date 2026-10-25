@@ -244,33 +244,33 @@ stateDiagram-v2
     failed_to_start --> [*]
 ```
 
-### 4.2 Detach handshake (double-fork)
+### 4.2 Detach handshake (setsid re-exec, D-016)
 
 The CLI returns instantly, but **never before the run is durable and session-proof**:
 
 ```mermaid
 sequenceDiagram
     participant P as CLI parent
-    participant I as intermediate fork
-    participant S as supervisor (grandchild)
+    participant S as supervisor (re-exec'd loglense)
     participant C as child command
 
     P->>P: create run dir + meta(status=starting), atomic
-    P->>I: fork()
-    I->>S: fork()
-    I-->>P: exits — P reaps it (no zombie)
-    S->>S: setsid() ← immune to EPERM<br/>(never a pgroup leader)
-    S->>S: stdin→/dev/null, out/err→spool raw files
-    S->>C: spawn with pipes
-    S-->>P: ack {child_pid} via pipe
+    P->>S: fork → setsid() before exec ← forked child is never<br/>a pgroup leader, so no EPERM → exec loglense __supervisor run-dir
+    Note over S: new session, no controlling tty,<br/>stdin/stdout/stderr → /dev/null
+    S->>S: trap TERM/INT (forwarded to the child group)
+    S->>C: spawn with pipes, own process group
+    S->>S: meta(running, child_pid, child_starttime), atomic = the ack
+    P->>P: poll meta for the ack (≤200ms)
     P-->>P: print "run 20261024-a3f8c2 started (pid N)" — exit 0
-    Note over S: survives terminal close, agent tool<br/>timeouts, CLI death
+    Note over S: survives terminal close, agent tool<br/>timeouts, CLI death, CLI group kill
     S->>C: capture → parse-on-write → events.jsonl
     C-->>S: exit
-    S->>S: meta(exited|signaled) + summary.json, atomic
+    S->>S: summary.json, then meta(exited|signaled) — both atomic
 ```
 
-Ack timeout (200ms) ⇒ `failed-to-start` with a clean error. The supervisor owns the child; if the supervisor is SIGKILLed, the store's derived-substate logic (4.1) keeps `ls`/`wait`/`kill` honest.
+Ack timeout (200ms) ⇒ `failed-to-start` with a clean error. A short-lived CLI simply exits and the supervisor is reparented; a long-lived parent (the MCP server) reaps it on a detached thread, so no zombie is ever left. The summary is written before the terminal meta, so any reader that sees a terminal status finds `summary.json`. The supervisor owns the child; if the supervisor is SIGKILLed, the store's derived-substate logic (4.1) keeps `ls`/`wait`/`kill` honest — and because a supervisor writes its terminal meta before exiting, a dead-supervisor verdict is always confirmed by one re-read of meta before it is reported.
+
+**Kill path.** `kill` on a live run drops a `control.kill` marker in the run dir (the supervisor polls it every 100ms and owns the TERM → 5s grace → KILL escalation, so it completes even after the CLI exits) and sends TERM to the child's process group at once. Every signal is preceded by the pid-reuse guard: the child pid must still carry the recorded `/proc` starttime, and the supervisor pid counts as live only while its argv still names the run. Orphaned runs are escalated by the caller directly; lost, terminal or pid-reused runs are never signaled.
 
 ### 4.3 Parse-on-write pipeline
 
@@ -293,7 +293,7 @@ flowchart LR
     DEDUP --> SUM["summary.json at exit:<br/>counts · test totals · top ≤20 templates"]
 ```
 
-Raw spools stay pristine (ANSI included); parsing works on the stripped copy. Memory is bounded: streaming everywhere, 10k-line block cap, LRU template state — a GB-scale `stdout.raw` never lands in RAM.
+Raw spools stay pristine (ANSI included); parsing works on the stripped copy. Memory is bounded: streaming everywhere, 10k-line block cap, LRU template state, and a bounded line channel between the stream readers and the parser — when parsing falls behind, the reader blocks, the pipe fills and the child is throttled instead of the backlog queueing in RAM. A GB-scale `stdout.raw` never lands in RAM (200 MB measured at under 8 MB supervisor peak RSS).
 
 ---
 
@@ -447,3 +447,7 @@ Single static binary (musl, x86_64 + aarch64), pure-Rust dependency tree (rmcp/t
 | D-010 feedback → fixture promote bridge | §8 |
 | D-011 supervisor-fired completion callbacks + ping adapters | §7 |
 | D-012 minimal packages-only flake + devenv dev shell | §9 |
+| D-013 `toml` for config + pack parsing | §3.4, §5 |
+| D-014 `sha2` for template ids | §4.3 |
+| D-015 `fs4` for the two advisory locks | §5 |
+| D-016 `libc` for setsid detach, group signals, TERM/INT trap | §4.2 |

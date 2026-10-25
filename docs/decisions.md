@@ -124,3 +124,39 @@ ADR-lite ledger: every cross-cutting choice with its why. Titles and section cro
 | Decision | Dev environment stays devenv + direnv (`devenv.nix`, `.envrc` with `use devenv` — no flake devShells). A minimal packages-only `flake.nix` sits alongside it: `packages.<system>.loglense` (native) now, static outputs later; the nixpkgs pin matches the ephor workspace so both projects share one closure cache. Static artifacts are also buildable via plain cargo from the dev shell, so nix is never a hard dependency for producing binaries. |
 | Alternatives considered | The devenv flake template with devShells (rejected by user); no flake at all (no NixOS story); one flake carrying both devShell and packages (revisit of the rejection). |
 | Consequences | Dev loop stays direnv-fast and nix-evaluation-light; NixOS consumption works via `nix build`/flake inputs from day one. Two packaging descriptions (devenv toolchain vs flake package) must stay consistent — accepted, small surface. Serves NFR-01 distribution path. |
+
+## D-013 — `toml` for config + pack parsing
+
+| | |
+|---|---|
+| Context | Config (`config.toml`) and parser packs (`formats.d/*.toml`, D-004) are TOML by contract; both need `deny_unknown_fields` errors that name the file and field. |
+| Decision | Depend on `toml` 0.8 (serde-based, pure Rust) in `loglense-core` and `loglense-parsers`. |
+| Alternatives considered | A hand-written TOML subset parser (rejected: error quality and spec drift); JSON packs (rejected: hostile to hand authoring, contradicts D-004). |
+| Consequences | One small pure-Rust dependency; static linking unaffected (D-009). |
+
+## D-014 — `sha2` for template ids
+
+| | |
+|---|---|
+| Context | Template ids must be stable across runs, machines and releases so `show`, feedback and golden fixtures can refer to them; std's hasher is randomly keyed per process. |
+| Decision | `template_id` = short hex of SHA-256 over the normalized template, via `sha2` 0.10 (pure Rust). |
+| Alternatives considered | std `DefaultHasher` (rejected: not stable across processes/releases); hand-rolled FNV (rejected: collision-prone at short widths). |
+| Consequences | Deterministic ids everywhere; pulls `cpufeatures` (and through it `libc`) transitively — see D-016. |
+
+## D-015 — `fs4` for the two advisory locks
+
+| | |
+|---|---|
+| Context | Exactly two places need cross-process mutual exclusion: concurrent `gc` runs (`gc.lock`) and appends to the global feedback index. std's file locking was not stable at the pinned toolchain baseline. |
+| Decision | Use `fs4` 0.12 `flock` wrappers, as ephor does; no other locks exist (single writer per run dir). |
+| Alternatives considered | Lock-free index appends only (rejected: index line rewrites in `resolve` need exclusion); lock files with pid content (rejected: stale-lock recovery is its own bug class). |
+| Consequences | One small dependency (pulls `rustix`); static linking unaffected. |
+
+## D-016 — `libc` for setsid detach, group signals, TERM/INT trap
+
+| | |
+|---|---|
+| Context | FR-02 requires the supervisor to survive the invoking terminal, agent tool timeouts and CLI death, and `kill` must signal the child's whole process group with a TERM → grace → KILL escalation. std offers `process_group` but no `setsid`, no `kill(2)` for arbitrary pids or groups, and no signal handlers. An interim std-only design (own process group, external `kill` binary, marker file only) left the supervisor in the caller's session with the controlling terminal attached and depended on a `kill` executable being present. |
+| Decision | Depend directly on `libc` 0.2 in `loglense-runner` (already in the build graph via D-014/D-015 — no new crate). All unsafe calls live in one module, each a single async-signal-safe call: `setsid` between fork and exec of `loglense __supervisor <run-dir>` (single fork: the forked child is never a group leader, so the EPERM the double-fork guards against cannot occur), `kill(-pgid, sig)` for group signals (ESRCH = already gone), and a TERM/INT `sigaction` handler that only stores the signal number for the capture loop to act on. `loglense kill` keeps the `control.kill` marker for the supervisor-owned escalation (pid-reuse-proof), plus an immediate guarded group TERM. |
+| Alternatives considered | Std-only detach (rejected: weaker FR-02 guarantee, external binary dependency); classic double-fork (rejected: same guarantee as fork + setsid-before-exec with an extra process); `nix` or `rustix` safe wrappers (rejected: larger API surface for four calls); `signal-hook` (rejected: one atomic store does not need it). |
+| Consequences | Runs survive SIGHUP/terminal close and a kill of the caller's entire process group (tested). External signals to the supervisor are forwarded rather than orphaning the child. Linux/Unix-only, consistent with the v1 platform scope. Serves FR-02, FR-07, NFR-04. |

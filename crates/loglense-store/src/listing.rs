@@ -63,7 +63,14 @@ fn summarize(run_dir: &Path) -> RunSummary {
         .file_name()
         .map(|n| n.to_string_lossy().into_owned())
         .unwrap_or_default();
-    let Ok(meta) = crate::meta::read_meta(run_dir) else {
+    let mut meta = crate::meta::read_meta(run_dir);
+    // A dead-supervisor verdict on a `running` meta may be a stale read: the
+    // supervisor writes its terminal meta and only then exits. Death is
+    // permanent, so one re-read after the liveness check is authoritative.
+    if meta.as_ref().is_ok_and(|m| derived_state(m).is_some()) {
+        meta = crate::meta::read_meta(run_dir);
+    }
+    let Ok(meta) = meta else {
         return RunSummary {
             run_id: dir_name,
             status: None,

@@ -22,6 +22,7 @@ fn missing_files_fall_back_to_builtin_defaults() {
     assert_eq!(config.default_parser, "auto");
     assert_eq!(config.retention.max_age_days, 14);
     assert_eq!(config.retention.max_total_mb, 2048);
+    assert_eq!(config.retention.min_free_mb, 100);
     assert_eq!(config.output.max_events, 50);
     assert_eq!(config.output.max_tail_lines, 100);
     assert_eq!(config.output.max_templates, 20);

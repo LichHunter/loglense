@@ -315,6 +315,17 @@ dependencies = [
 [[package]]
 name = "loglense-runner"
 version = "0.1.0"
+dependencies = [
+ "libc",
+ "loglense-core",
+ "loglense-parsers",
+ "loglense-store",
+ "regex",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+]
 
 [[package]]
 name = "loglense-store"

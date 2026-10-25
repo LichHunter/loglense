@@ -4,3 +4,23 @@ description = "loglense daemonless detached supervisor owning the wrapped child 
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+
+[dependencies]
+loglense-core = { path = "../loglense-core" }
+loglense-parsers = { path = "../loglense-parsers" }
+loglense-store = { path = "../loglense-store" }
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+thiserror.workspace = true
+regex.workspace = true
+libc.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+
+# Runner-internal binary: `__supervisor <run-dir>` (same argv the CLI routes
+# from T12 on) plus a `spawn` CLI stand-in. Tests locate it via
+# `env!("CARGO_BIN_EXE_loglense-runner-supervisor")`.
+[[bin]]
+name = "loglense-runner-supervisor"
+path = "src/bin/supervisor.rs"

@@ -39,6 +39,9 @@ pub struct Retention {
     pub max_age_days: u64,
     /// Keep total spool size under this many megabytes (oldest first).
     pub max_total_mb: u64,
+    /// Refuse to start a run when the state dir's filesystem has less than
+    /// this many megabytes free (0 disables the check).
+    pub min_free_mb: u64,
 }
 
 /// Output caps protecting agent context (bounded reads are a hard invariant).
@@ -70,6 +73,7 @@ impl Default for Config {
             retention: Retention {
                 max_age_days: 14,
                 max_total_mb: 2048,
+                min_free_mb: 100,
             },
             output: Output {
                 max_events: 50,
@@ -131,6 +135,9 @@ impl Config {
             if let Some(max_total_mb) = retention.max_total_mb {
                 self.retention.max_total_mb = max_total_mb;
             }
+            if let Some(min_free_mb) = retention.min_free_mb {
+                self.retention.min_free_mb = min_free_mb;
+            }
         }
         if let Some(output) = layer.output {
             if let Some(max_events) = output.max_events {
@@ -160,6 +167,7 @@ struct Layer {
 struct RetentionLayer {
     max_age_days: Option<u64>,
     max_total_mb: Option<u64>,
+    min_free_mb: Option<u64>,
 }
 
 #[derive(Debug, Default, Deserialize)]

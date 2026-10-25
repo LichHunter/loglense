@@ -27,5 +27,6 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "process"] }
 toml = "0.8"
 sha2 = "0.10"
 fs4 = "0.12"
+libc = "0.2"
 tempfile = "3"
 proptest = "1"
