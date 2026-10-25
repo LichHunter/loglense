@@ -1,0 +1,4 @@
+{"level": "info", "msg": "server started", "port": 8080}
+{"level": "error", "msg": "query failed", "status": 500}
+{"ts": 1716800000, "level": "debug", "msg": "cache probe"}
+{"level": "info", "status": "ok"}

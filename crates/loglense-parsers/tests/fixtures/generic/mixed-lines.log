@@ -1,0 +1,6 @@
+INFO: booting application
+ERROR: failed to bind port
+WARN: connection pool nearly empty
+routine checkpoint written
+FATAL deadlock detected
+shutdown complete

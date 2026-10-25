@@ -1,0 +1,9 @@
+{"level":"ERROR","msg":"one"}
+{"level":"fatal","msg":"two"}
+{"level":"Warning","msg":"three"}
+{"level":"notice","msg":"four"}
+{"level":"info","msg":"five"}
+{"level":"debug","msg":"six"}
+{"level":"trace","msg":"seven"}
+{"severity":"warn","msg":"eight"}
+{"lvl":"INFO","msg":"nine"}

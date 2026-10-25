@@ -1,0 +1,6 @@
+[
+  {"seq":1,"ts_ms":0,"stream":"out","severity":"info","kind":"line","message":"server started","lines":[1]},
+  {"seq":2,"ts_ms":0,"stream":"out","severity":"error","kind":"line","message":"query failed","lines":[2]},
+  {"seq":3,"ts_ms":0,"stream":"out","severity":"debug","kind":"line","message":"cache probe","lines":[3]},
+  {"seq":4,"ts_ms":0,"stream":"out","severity":"info","kind":"line","message":"{\"level\": \"info\", \"status\": \"ok\"}","lines":[4]}
+]

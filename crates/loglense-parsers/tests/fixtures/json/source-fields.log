@@ -1,0 +1,3 @@
+{"level":"error","msg":"boom","file":"src/main.rs","line":42,"module":"app::main"}
+{"msg":"no level here","module":"worker"}
+{"level":"warning","message":"using message key","file":"lib/util.rs"}

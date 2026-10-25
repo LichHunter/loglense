@@ -1,0 +1,8 @@
+[
+  {"seq":1,"ts_ms":0,"stream":"out","severity":"info","kind":"line","message":"INFO: booting application","lines":[1]},
+  {"seq":2,"ts_ms":0,"stream":"out","severity":"error","kind":"line","message":"ERROR: failed to bind port","lines":[2]},
+  {"seq":3,"ts_ms":0,"stream":"out","severity":"warning","kind":"line","message":"WARN: connection pool nearly empty","lines":[3]},
+  {"seq":4,"ts_ms":0,"stream":"out","severity":"info","kind":"line","message":"routine checkpoint written","lines":[4]},
+  {"seq":5,"ts_ms":0,"stream":"out","severity":"error","kind":"line","message":"FATAL deadlock detected","lines":[5]},
+  {"seq":6,"ts_ms":0,"stream":"out","severity":"info","kind":"line","message":"shutdown complete","lines":[6]}
+]

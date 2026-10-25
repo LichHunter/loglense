@@ -1,0 +1,7 @@
+level=error msg=one
+level=fatal msg=two
+level=warn msg=three
+level=debug msg=four
+level=trace msg=five
+level=notice msg=six
+component=cache hit=true

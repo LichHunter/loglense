@@ -8,10 +8,11 @@
 //! - [`detect`] — autodetection over the buffered sample.
 //! - [`pack`] — TOML pack grammar (schema = 1) loader.
 //!
-//! Concrete parsers (generic/json/logfmt bases, java/python/rust/go/lang
-//! bases, tool parsers) land in tasks T7–T10; this crate currently ships the
-//! framework only.
+//! Concrete parsers (task T7+): [`bases`] ships the format bases
+//! `generic`/`json`/`logfmt`; lang bases and tool parsers land in later
+//! waves, registered through [`bases::register`].
 
+pub mod bases;
 pub mod chain;
 pub mod detect;
 pub mod pack;

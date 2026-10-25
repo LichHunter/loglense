@@ -1,0 +1,10 @@
+ERROR: database connection refused
+FATAL: unrecoverable state
+PANIC: runtime panic in worker
+CRITICAL: disk usage at 98%
+SEVERE: memory pressure
+error: lowercase colon form
+java.lang.RuntimeException: cannot open config
+Traceback (most recent call last):
+Test FAILED unexpectedly
+BUILD FAILURE

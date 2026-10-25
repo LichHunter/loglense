@@ -1,0 +1,5 @@
+[
+  {"seq":1,"ts_ms":0,"stream":"out","severity":"error","kind":"line","message":"boom","source":{"file":"src/main.rs","line":42,"module":"app::main"},"lines":[1]},
+  {"seq":2,"ts_ms":0,"stream":"out","severity":"info","kind":"line","message":"no level here","source":{"file":"","line":0,"module":"worker"},"lines":[2]},
+  {"seq":3,"ts_ms":0,"stream":"out","severity":"warning","kind":"line","message":"using message key","source":{"file":"lib/util.rs","line":0},"lines":[3]}
+]

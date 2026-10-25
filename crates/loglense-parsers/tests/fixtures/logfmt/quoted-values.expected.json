@@ -1,0 +1,5 @@
+[
+  {"seq":1,"ts_ms":0,"stream":"out","severity":"info","kind":"line","message":"hello world with spaces","lines":[1]},
+  {"seq":2,"ts_ms":0,"stream":"out","severity":"warning","kind":"line","message":"disk 85% full on /mnt/data","lines":[2]},
+  {"seq":3,"ts_ms":0,"stream":"out","severity":"info","kind":"line","message":"quoted msg key only","lines":[3]}
+]
