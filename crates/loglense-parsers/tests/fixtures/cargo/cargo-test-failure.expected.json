@@ -1,0 +1,65 @@
+[
+  {
+    "seq": 1,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "phase",
+    "message": "   Compiling scratch-fail v0.1.0 (/tmp/opencode/t10-capture)",
+    "phase": "scratch-fail v0.1.0 (/tmp/opencode/t10-capture)",
+    "lines": [1]
+  },
+  {
+    "seq": 2,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "phase",
+    "message": "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.18s",
+    "phase": "finished",
+    "lines": [2]
+  },
+  {
+    "seq": 3,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "phase",
+    "message": "     Running unittests src/lib.rs (target/debug/deps/scratch_fail-8a7c8bf86d405825)",
+    "phase": "unittests src/lib.rs (target/debug/deps/scratch_fail-8a7c8bf86d405825)",
+    "lines": [3]
+  },
+  {
+    "seq": 4,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "line",
+    "message": "assertion `left == right` failed",
+    "source": { "file": "src/lib.rs", "line": 10 },
+    "lines": [13, 14, 15, 16, 17],
+    "frames": [
+      "left: 4",
+      "right: 5",
+      "note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace"
+    ]
+  },
+  {
+    "seq": 5,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "summary",
+    "message": "test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+    "lines": [23]
+  },
+  {
+    "seq": 6,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "line",
+    "message": "test failed, to rerun pass `--lib`",
+    "lines": [24]
+  }
+]

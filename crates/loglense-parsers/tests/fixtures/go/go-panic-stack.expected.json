@@ -1,0 +1,15 @@
+[
+  {
+    "seq": 1,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "line",
+    "message": "runtime error: index out of range [5] with length 3",
+    "lines": [1, 2, 3, 4, 5, 6, 7],
+    "frames": [
+      "/home/dev/proj/main.go:12",
+      "/home/dev/proj/internal/parse.go:47"
+    ]
+  }
+]

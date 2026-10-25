@@ -1,0 +1,24 @@
+   Compiling scratch-fail v0.1.0 (/tmp/opencode/t10-capture)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.18s
+     Running unittests src/lib.rs (target/debug/deps/scratch_fail-8a7c8bf86d405825)
+
+running 2 tests
+test tests::two_plus_two_is_four ... ok
+test tests::two_plus_two_is_five ... FAILED
+
+failures:
+
+---- tests::two_plus_two_is_five stdout ----
+
+thread 'tests::two_plus_two_is_five' (2440013) panicked at src/lib.rs:10:9:
+assertion `left == right` failed
+  left: 4
+ right: 5
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    tests::two_plus_two_is_five
+
+test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+error: test failed, to rerun pass `--lib`

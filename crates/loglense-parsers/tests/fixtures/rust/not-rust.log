@@ -1,0 +1,4 @@
+just some plain prose
+no diagnostics here
+  | pipe-looking line outside any block
+2 | code-looking line outside any block

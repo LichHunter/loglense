@@ -1,0 +1,32 @@
+[
+  {
+    "seq": 1,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "phase",
+    "message": "   Compiling scratch-fail v0.1.0 (/tmp/opencode/t10-capture)",
+    "phase": "scratch-fail v0.1.0 (/tmp/opencode/t10-capture)",
+    "lines": [1]
+  },
+  {
+    "seq": 2,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "line",
+    "message": "mismatched types",
+    "source": { "file": "src/main.rs", "line": 2 },
+    "lines": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
+    "frames": ["help: try using a conversion method"]
+  },
+  {
+    "seq": 3,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "summary",
+    "message": "error: could not compile `scratch-fail` (bin \"scratch-fail\") due to 1 previous error",
+    "lines": [16]
+  }
+]

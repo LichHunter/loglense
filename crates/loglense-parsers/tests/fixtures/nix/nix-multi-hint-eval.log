@@ -1,0 +1,13 @@
+error:
+       … while evaluating a branch condition
+         at /nix/store/j09c6s8p6jnf5sd0wvnfj96hivzixb3n-source/pkgs/top-level/aliases.nix:26:5:
+           25|     alias:
+             |     ^
+           27|       lib.removeAttrs alias [ "recurseForDerivations" ]
+
+       … while calling the 'throw' builtin
+         at /nix/store/j09c6s8p6jnf5sd0wvnfj96hivzixb3n-source/pkgs/top-level/aliases.nix:2228:13:
+           2228|   python2 = throw "python2 has been removed; Python 2 is end-of-life. Use `python3` instead.";
+             |             ^
+
+       error: python2 has been removed; Python 2 is end-of-life. Use `python3` instead.

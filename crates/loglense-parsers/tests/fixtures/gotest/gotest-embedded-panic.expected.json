@@ -1,0 +1,54 @@
+[
+  {
+    "seq": 1,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "phase",
+    "message": "=== RUN   TestPanics",
+    "phase": "TestPanics",
+    "lines": [1]
+  },
+  {
+    "seq": 2,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "line",
+    "message": "boom",
+    "lines": [2, 3, 4, 5, 6, 7, 8, 9, 10],
+    "frames": [
+      "/usr/local/go/src/testing/testing.go:1545",
+      "/usr/local/go/src/testing/testing.go:1594",
+      "/home/dev/proj/main_test.go:7"
+    ]
+  },
+  {
+    "seq": 3,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "test",
+    "message": "--- FAIL: TestPanics (0.00s)",
+    "test": { "name": "TestPanics", "outcome": "failed", "duration_ms": 0 },
+    "lines": [11]
+  },
+  {
+    "seq": 4,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "summary",
+    "message": "FAIL",
+    "lines": [12]
+  },
+  {
+    "seq": 5,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "summary",
+    "message": "FAIL\texample.com/demo\t0.001s",
+    "lines": [13]
+  }
+]

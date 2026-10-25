@@ -1,0 +1,8 @@
+   Compiling scratch-fail v0.1.0 (/tmp/opencode/t10-capture)
+error[E0308]: mismatched types
+ --> src/main.rs:2:26
+  |
+2 |     let answer: String = 42;
+   Compiling other-crate v0.2.0 (/tmp/opencode/t10-capture)
+error[E0308]: mismatched types
+ --> src/main.rs:2:26

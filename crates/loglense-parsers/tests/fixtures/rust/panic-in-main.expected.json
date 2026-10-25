@@ -1,0 +1,13 @@
+[
+  {
+    "seq": 1,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "line",
+    "message": "explicit panic",
+    "source": { "file": "src/main.rs", "line": 4 },
+    "lines": [1, 2, 3],
+    "frames": ["note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace"]
+  }
+]

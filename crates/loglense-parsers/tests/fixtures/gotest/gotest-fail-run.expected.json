@@ -1,0 +1,69 @@
+[
+  {
+    "seq": 1,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "phase",
+    "message": "=== RUN   TestPass",
+    "phase": "TestPass",
+    "lines": [1]
+  },
+  {
+    "seq": 2,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "test",
+    "message": "--- PASS: TestPass (0.00s)",
+    "test": { "name": "TestPass", "outcome": "passed", "duration_ms": 0 },
+    "lines": [2]
+  },
+  {
+    "seq": 3,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "phase",
+    "message": "=== RUN   TestFail",
+    "phase": "TestFail",
+    "lines": [3]
+  },
+  {
+    "seq": 4,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "test",
+    "message": "--- FAIL: TestFail (0.01s)",
+    "test": { "name": "TestFail", "outcome": "failed", "duration_ms": 10 },
+    "lines": [4]
+  },
+  {
+    "seq": 5,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "summary",
+    "message": "FAIL",
+    "lines": [5]
+  },
+  {
+    "seq": 6,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "summary",
+    "message": "FAIL\texample.com/demo\t0.012s",
+    "lines": [6]
+  },
+  {
+    "seq": 7,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "summary",
+    "message": "FAIL",
+    "lines": [7]
+  }
+]

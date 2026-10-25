@@ -1,11 +1,15 @@
-//! Tool parser wiring (tasks T8-T9): every tool registers over its lang
+//! Tool parser wiring (tasks T8-T10): every tool registers over its lang
 //! base, chains order derived-before-base, autodetection prefers the tool on
 //! tool logs and the base on plain base logs, the java block state machine
 //! claims continuations silently and emits one event per block, and maven
 //! lines interrupting an open block behave per the chain contract.
 
+use loglense_parsers::bases::go::GoParser;
 use loglense_parsers::bases::java::JavaParser;
 use loglense_parsers::bases::python::PythonParser;
+use loglense_parsers::bases::rust::RustParser;
+use loglense_parsers::tools::cargo::CargoParser;
+use loglense_parsers::tools::gotest::GotestParser;
 use loglense_parsers::tools::maven::MavenParser;
 use loglense_parsers::tools::pytest::PytestParser;
 use loglense_parsers::{
@@ -53,12 +57,21 @@ fn every_tool_chains_over_its_lang_base() {
     registry
         .resolve()
         .expect("all extends targets known, no cycle");
-    for (tool, base) in [("maven", "java"), ("pytest", "python")] {
+    for (tool, base) in [
+        ("maven", "java"),
+        ("pytest", "python"),
+        ("cargo", "rust"),
+        ("gotest", "go"),
+    ] {
         assert_eq!(
             registry.build_chain(tool).expect("chain").parser_names(),
             vec![tool, base, "generic"]
         );
     }
+    assert_eq!(
+        registry.build_chain("nix").expect("chain").parser_names(),
+        vec!["nix", "generic"]
+    );
 }
 
 #[test]
@@ -67,15 +80,37 @@ fn pytest_outscores_python_base_on_pytest_log() {
 }
 
 #[test]
-fn python_base_outscores_pytest_on_plain_traceback() {
-    let owned = fixture_sample("python/python-traceback.log");
-    let sample: Vec<&str> = owned.iter().map(String::as_str).collect();
-    assert!(
-        PythonParser.detect(&sample) >= PytestParser.detect(&sample),
-        "python {} must not lose to pytest {}",
-        PythonParser.detect(&sample),
-        PytestParser.detect(&sample)
-    );
+fn cargo_outscores_rust_base_on_cargo_log() {
+    assert_tool_beats_base(&CargoParser, &RustParser, "cargo/cargo-test-failure.log");
+}
+
+#[test]
+fn gotest_outscores_go_base_on_gotest_log() {
+    assert_tool_beats_base(&GotestParser, &GoParser, "gotest/gotest-fail-run.log");
+}
+
+#[test]
+fn lang_bases_outscore_their_tools_on_plain_base_logs() {
+    for (base, tool, fixture) in [
+        (
+            &PythonParser as &dyn Parser,
+            &PytestParser as &dyn Parser,
+            "python/python-traceback.log",
+        ),
+        (&RustParser, &CargoParser, "rust/panic-in-main.log"),
+        (&GoParser, &GotestParser, "go/go-panic-stack.log"),
+    ] {
+        let owned = fixture_sample(fixture);
+        let sample: Vec<&str> = owned.iter().map(String::as_str).collect();
+        assert!(
+            base.detect(&sample) >= tool.detect(&sample),
+            "{fixture}: {} {} must not lose to {} {}",
+            base.name(),
+            base.detect(&sample),
+            tool.name(),
+            tool.detect(&sample)
+        );
+    }
 }
 
 fn ctx(line_no: u64) -> LineCtx {

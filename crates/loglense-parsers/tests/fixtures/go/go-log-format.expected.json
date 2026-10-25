@@ -1,0 +1,32 @@
+[
+  {
+    "seq": 1,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "line",
+    "message": "server starting",
+    "source": { "file": "file.go", "line": 123 },
+    "lines": [1]
+  },
+  {
+    "seq": 2,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "line",
+    "message": "job accepted",
+    "source": { "file": "worker.go", "line": 45 },
+    "lines": [2]
+  },
+  {
+    "seq": 3,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "line",
+    "message": "shutdown complete",
+    "source": { "file": "main.go", "line": 8 },
+    "lines": [3]
+  }
+]

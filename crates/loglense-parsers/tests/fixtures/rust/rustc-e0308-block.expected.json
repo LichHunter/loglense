@@ -1,0 +1,13 @@
+[
+  {
+    "seq": 1,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "line",
+    "message": "mismatched types",
+    "source": { "file": "src/main.rs", "line": 2 },
+    "lines": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+    "frames": ["help: try using a conversion method"]
+  }
+]

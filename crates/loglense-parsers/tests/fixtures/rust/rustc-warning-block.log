@@ -1,0 +1,9 @@
+warning: unused variable: `unused`
+ --> src/main.rs:2:9
+  |
+2 |     let unused = 7;
+  |         ^^^^^^ help: if this is intentional, prefix it with an underscore: `_unused`
+  |
+  = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `scratch-fail` (bin "scratch-fail") generated 1 warning

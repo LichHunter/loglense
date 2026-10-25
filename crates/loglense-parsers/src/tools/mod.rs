@@ -7,9 +7,13 @@
 //! [`Parser`](crate::traits::Parser) in `src/tools/<name>.rs`, declare
 //! `pub mod <name>;` here, and add one line to [`register`].
 //!
-//! Built-ins: `maven` → `java`, `pytest` → `python`.
+//! Built-ins: `maven` → `java`, `pytest` → `python`, `cargo` → `rust`,
+//! `gotest` → `go`, plus the standalone `nix` (no lang base).
 
+pub mod cargo;
+pub mod gotest;
 pub mod maven;
+pub mod nix;
 pub mod pytest;
 
 use crate::registry::{ParserRegistry, Source};
@@ -30,4 +34,17 @@ pub fn register(registry: &mut ParserRegistry) {
         Source::Builtin,
         Some("python".to_string()),
     );
+    registry.register(
+        "cargo",
+        || Box::new(cargo::CargoParser),
+        Source::Builtin,
+        Some("rust".to_string()),
+    );
+    registry.register(
+        "gotest",
+        || Box::new(gotest::GotestParser),
+        Source::Builtin,
+        Some("go".to_string()),
+    );
+    registry.register("nix", || Box::new(nix::NixParser), Source::Builtin, None);
 }

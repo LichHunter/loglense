@@ -1,0 +1,40 @@
+[
+  {
+    "seq": 1,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "phase",
+    "message": "=== RUN   TestAdd",
+    "phase": "TestAdd",
+    "lines": [1]
+  },
+  {
+    "seq": 2,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "test",
+    "message": "--- PASS: TestAdd (0.00s)",
+    "test": { "name": "TestAdd", "outcome": "passed", "duration_ms": 0 },
+    "lines": [2]
+  },
+  {
+    "seq": 3,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "summary",
+    "message": "PASS",
+    "lines": [3]
+  },
+  {
+    "seq": 4,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "summary",
+    "message": "ok  \texample.com/demo\t0.045s",
+    "lines": [4]
+  }
+]

@@ -1,0 +1,7 @@
+=== RUN   TestFlaky
+    TestFlaky setup: skipping in CI
+--- SKIP: TestFlaky (0.00s)
+=== RUN   TestOther
+--- PASS: TestOther (0.00s)
+PASS
+ok  	example.com/demo	0.018s

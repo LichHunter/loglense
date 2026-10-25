@@ -1,6 +1,6 @@
 //! Format base parsers (docs/parsers.md §5.1): the stateless single-line
 //! modules [`generic`], [`json`] and [`logfmt`], plus the stateful lang
-//! bases [`java`] and [`python`] (rust/go land in T10).
+//! bases [`java`], [`python`], [`rust`] and [`go`].
 //!
 //! Built-in registration pattern (T8-T10 workers extend this): implement
 //! [`Parser`](crate::traits::Parser) in `src/bases/<name>.rs`, declare
@@ -12,12 +12,16 @@
 //! [`logfmt`]: logfmt::LogfmtParser
 //! [`java`]: java::JavaParser
 //! [`python`]: python::PythonParser
+//! [`rust`]: rust::RustParser
+//! [`go`]: go::GoParser
 
 pub mod generic;
+pub mod go;
 pub mod java;
 pub mod json;
 pub mod logfmt;
 pub mod python;
+pub mod rust;
 
 use loglense_core::Severity;
 
@@ -47,6 +51,8 @@ pub fn register(registry: &mut ParserRegistry) {
         Source::Builtin,
         None,
     );
+    registry.register("rust", || Box::new(rust::RustParser), Source::Builtin, None);
+    registry.register("go", || Box::new(go::GoParser), Source::Builtin, None);
 }
 
 /// Case-insensitive level-string → [`Severity`] mapping shared by the

@@ -1,0 +1,11 @@
+[
+  {
+    "seq": 1,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "line",
+    "message": "attribute 'missing' in selection path 'missing' not found",
+    "lines": [1]
+  }
+]

@@ -1,0 +1,8 @@
+panic: runtime error: index out of range [5] with length 3
+
+goroutine 1 [running]:
+main.main()
+	/home/dev/proj/main.go:12 +0x1a3
+github.com/dev/proj/internal.Parse({})
+	/home/dev/proj/internal/parse.go:47 +0x57
+exit status 2

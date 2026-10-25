@@ -1,0 +1,60 @@
+[
+  {
+    "seq": 1,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "phase",
+    "message": "=== RUN   TestFlaky",
+    "phase": "TestFlaky",
+    "lines": [1]
+  },
+  {
+    "seq": 2,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "notice",
+    "kind": "test",
+    "message": "--- SKIP: TestFlaky (0.00s)",
+    "test": { "name": "TestFlaky", "outcome": "skipped", "duration_ms": 0 },
+    "lines": [3]
+  },
+  {
+    "seq": 3,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "phase",
+    "message": "=== RUN   TestOther",
+    "phase": "TestOther",
+    "lines": [4]
+  },
+  {
+    "seq": 4,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "test",
+    "message": "--- PASS: TestOther (0.00s)",
+    "test": { "name": "TestOther", "outcome": "passed", "duration_ms": 0 },
+    "lines": [5]
+  },
+  {
+    "seq": 5,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "summary",
+    "message": "PASS",
+    "lines": [6]
+  },
+  {
+    "seq": 6,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "summary",
+    "message": "ok  \texample.com/demo\t0.018s",
+    "lines": [7]
+  }
+]

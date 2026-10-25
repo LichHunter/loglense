@@ -1,0 +1,15 @@
+this derivation will be built:
+  /nix/store/xdsk92xczkpnmay774gaxysk8al2idjw-t10-fail.drv
+building '/nix/store/xdsk92xczkpnmay774gaxysk8al2idjw-t10-fail.drv'...
+demo builder failure
+error: Cannot build '/nix/store/xdsk92xczkpnmay774gaxysk8al2idjw-t10-fail.drv'.
+       Reason: builder failed with exit code 1.
+       Output paths:
+         /nix/store/gk1si4cf8hlabpw69fivyrjqrx0kplbw-t10-fail
+       Last 1 log lines:
+       > demo builder failure
+       For full logs, run:
+         nix log /nix/store/xdsk92xczkpnmay774gaxysk8al2idjw-t10-fail.drv
+warning: `nix-build` in a nix shell is deprecated
+       … from https://wiki.nixos.org/wiki/Development_environment_with_nix-shell
+trace: demo trace message

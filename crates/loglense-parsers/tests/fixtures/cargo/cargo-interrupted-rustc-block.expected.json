@@ -1,0 +1,42 @@
+[
+  {
+    "seq": 1,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "phase",
+    "message": "   Compiling scratch-fail v0.1.0 (/tmp/opencode/t10-capture)",
+    "phase": "scratch-fail v0.1.0 (/tmp/opencode/t10-capture)",
+    "lines": [1]
+  },
+  {
+    "seq": 2,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "line",
+    "message": "mismatched types",
+    "source": { "file": "src/main.rs", "line": 2 },
+    "lines": [2, 3, 4, 5]
+  },
+  {
+    "seq": 3,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "phase",
+    "message": "   Compiling other-crate v0.2.0 (/tmp/opencode/t10-capture)",
+    "phase": "other-crate v0.2.0 (/tmp/opencode/t10-capture)",
+    "lines": [6]
+  },
+  {
+    "seq": 4,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "line",
+    "message": "mismatched types",
+    "source": { "file": "src/main.rs", "line": 2 },
+    "lines": [7, 8]
+  }
+]

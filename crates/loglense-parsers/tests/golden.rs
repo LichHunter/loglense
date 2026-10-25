@@ -31,13 +31,18 @@ struct Case {
 /// single extension point new parsers touch (one match arm per parser).
 fn parser_for(dir: &str) -> Option<Box<dyn Parser>> {
     match dir {
+        "cargo" => Some(Box::new(loglense_parsers::tools::cargo::CargoParser)),
         "generic" => Some(Box::new(loglense_parsers::bases::generic::GenericParser)),
+        "go" => Some(Box::new(loglense_parsers::bases::go::GoParser)),
+        "gotest" => Some(Box::new(loglense_parsers::tools::gotest::GotestParser)),
         "java" => Some(Box::new(loglense_parsers::bases::java::JavaParser)),
         "json" => Some(Box::new(loglense_parsers::bases::json::JsonParser)),
         "logfmt" => Some(Box::new(loglense_parsers::bases::logfmt::LogfmtParser)),
         "maven" => Some(Box::new(loglense_parsers::tools::maven::MavenParser)),
+        "nix" => Some(Box::new(loglense_parsers::tools::nix::NixParser)),
         "python" => Some(Box::new(loglense_parsers::bases::python::PythonParser)),
         "pytest" => Some(Box::new(loglense_parsers::tools::pytest::PytestParser)),
+        "rust" => Some(Box::new(loglense_parsers::bases::rust::RustParser)),
         _ => None,
     }
 }

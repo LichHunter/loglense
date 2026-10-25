@@ -1,0 +1,13 @@
+=== RUN   TestPanics
+panic: boom
+
+goroutine 6 [running]:
+testing.tRunner.func1.2({})
+	/usr/local/go/src/testing/testing.go:1545
+testing.tRunner(...)
+	/usr/local/go/src/testing/testing.go:1594
+main.TestPanics(0x0?)
+	/home/dev/proj/main_test.go:7 +0x25
+--- FAIL: TestPanics (0.00s)
+FAIL
+FAIL	example.com/demo	0.001s

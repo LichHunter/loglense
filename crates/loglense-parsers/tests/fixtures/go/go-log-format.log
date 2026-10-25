@@ -1,0 +1,3 @@
+2009/01/23 01:23:23.123 file.go:123: server starting
+2009/01/23 01:23:24.000 worker.go:45: job accepted
+2009/11/10 23:00:00 main.go:8: shutdown complete

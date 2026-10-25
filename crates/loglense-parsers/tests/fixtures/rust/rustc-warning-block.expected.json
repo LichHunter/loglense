@@ -1,0 +1,22 @@
+[
+  {
+    "seq": 1,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "warning",
+    "kind": "line",
+    "message": "unused variable: `unused`",
+    "source": { "file": "src/main.rs", "line": 2 },
+    "lines": [1, 2, 3, 4, 5, 6, 7],
+    "frames": ["= note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default"]
+  },
+  {
+    "seq": 2,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "warning",
+    "kind": "line",
+    "message": "`scratch-fail` (bin \"scratch-fail\") generated 1 warning",
+    "lines": [9]
+  }
+]
