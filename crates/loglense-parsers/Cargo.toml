@@ -4,3 +4,14 @@ description = "loglense two-tier modular log parsing: language bases, tool parse
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+
+[dependencies]
+loglense-core = { path = "../loglense-core" }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+regex = { workspace = true }
+thiserror = { workspace = true }
+toml = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
