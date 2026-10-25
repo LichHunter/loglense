@@ -46,14 +46,14 @@ MCP tools have no process exit codes; the same outcomes travel as result fields 
 | Subcommand | Purpose | Arguments | Key flags | Default cap | `--json` shape |
 |---|---|---|---|---|---|
 | `run` | wrap a command: spawn detached supervisor, print id + pid, return instantly (exit 0) | `-- <cmd...>` | `--parser <name>` · `--on-complete <cmd>` · `--on-complete-timeout <ms>` | instant return | object with `run_id`, `pid`, run dir |
-| `init` | create `.loglense/` in CWD, write its self-ignore file, append `.loglense/` to the repo `.gitignore` when in a git repo and the line is absent; prints every action; idempotent | — | — | — | list of actions taken |
-| `ls` | list runs newest-first (derived liveness: orphaned/lost shown as interrupted family) | — | `--max` · `--status` | 50 runs | rows of `run_id`, `status`, `cmd_head`, `age`, severity `counts` |
-| `show` | one run: meta + summary + top deduped error templates (+ callback result and `callback.log` tail when present) | `<run-id>` | `--max` | 20 templates | object with `meta`, `summary`, `templates` |
+| `init` | create `.loglense/` in CWD, write its self-ignore file, append `.loglense/` to the repo `.gitignore` when in a git repo and the line is absent; prints every action; idempotent | — | `--force` (allow creating directly in `$HOME` or `/`) | — | object with `state_dir` and `actions` (each `action` created / exists / appended / unchanged / skipped, `path`, `detail`) |
+| `ls` | list runs newest-first (derived liveness: orphaned/lost shown as interrupted family); corrupt runs warn on stderr and are skipped | — | `--max` · `--status` (starting, running, exited, signaled, failed-to-start, interrupted, orphaned, lost) | 50 runs | object with `runs` (rows of `run_id`, `status`, optional `derived`, `cmd_head`, `age_s`, optional `exit_code`, optional severity `counts` once finished), `total`, `shown` |
+| `show` | one run: meta + summary + top deduped error/warning templates, errors first (+ callback result and `callback.log` tail when present) | `<run-id>` | `--max` | 20 templates | object with `meta`, `state`, `summary` (without its template list), `templates` |
 | `errors` | error events of a run, oldest first | `<run-id>` | `--max` | 50 events | object with `events`, `total`, `shown` |
 | `warnings` | warning events of a run | `<run-id>` | `--max` | 50 events | same shape as `errors` |
-| `tail` | last lines of a run's captured output (raw spool) | `<run-id>` | `--stream out\|err\|merged` · `--lines` | 100 lines | object with `lines`, `truncated` |
+| `tail` | last lines of a run's captured output (raw spool); `merged` (default) interleaves both streams in arrival order — exact up to pipe-read granularity (D-007, D-017) | `<run-id>` | `--stream out\|err\|merged` · `--lines` | 100 lines | object with `lines` (each `stream`, raw `line`, `text`), `truncated` |
 | `wait` | block until a run reaches a terminal state, a derived dead substate, or timeout (§3) | `<run-id>` | `--timeout <seconds>` (omitted = no timeout) | poll 250 ms | object with `status`, optional `exit_code`, `timed_out` |
-| `kill` | terminate a run: signals the child process group after supervisor-liveness and pid-reuse checks; prints what was signaled; clean refusal on starttime mismatch or already-terminal run | `<run-id>` | — | — | object with `run_id`, `action`, `status` |
+| `kill` | terminate a run: signals the child process group after supervisor-liveness and pid-reuse checks; prints what was signaled; clean refusal on starttime mismatch or already-terminal run (already-terminal exits 0; a refusal — lost run, pid reuse, corrupt meta — exits 2) | `<run-id>` | — | — | object with `run_id`, `action`, `status`, `detail` |
 | `gc` | delete old runs (flock-serialized; never touches live-supervisor runs; rename-to-trash then delete) | — | `--max-age <days>` · `--max-total <MB>` (defaults from config: 14 days / 2048 MB) | — | object with `runs_removed`, `bytes_freed` |
 | `parsers` | authoring suite — see §2.1 | — | — | — | — |
 | `feedback` | agent-feedback suite — see §2.2 | — | — | — | — |
@@ -61,6 +61,8 @@ MCP tools have no process exit codes; the same outcomes travel as result fields 
 | `mcp` | start the stdio MCP server (§5) | — | — | — | no output — protocol on stdio |
 
 `tail` has no follow/watch mode in v1 — a `--follow` flag is rejected with a clear error rather than approximated.
+
+Every printed message or line is additionally capped at 4096 bytes (marked with the number of bytes cut) and every event at 20 frames, so a single pathological line cannot flood an agent context even within the item caps.
 
 ### 2.1 `parsers` subcommands
 

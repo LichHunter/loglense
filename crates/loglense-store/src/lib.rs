@@ -9,6 +9,7 @@ mod discovery;
 mod events;
 mod feedback;
 mod gc;
+mod interleave;
 mod listing;
 mod meta;
 
@@ -17,15 +18,17 @@ use std::path::{Path, PathBuf};
 use loglense_core::RunIdError;
 
 pub use discovery::{create, discover, resolve, resolve_from, STATE_DIR_NAME};
-pub use events::{read_events, EventsRead, EventsWriter};
+pub use events::{read_events, scan_events, EventsRead, EventsWriter};
 pub use feedback::{
     feedback_index_path, list_feedback, read_feedback, read_feedback_index, resolve_feedback,
     write_feedback, FeedbackPointer, FeedbackRecord, FeedbackStatus,
 };
 pub use gc::{gc, GcReport};
+pub use interleave::{last_segments, InterleaveWriter, Segment, INTERLEAVE_FILE};
 pub use listing::{list_runs, DerivedState, RunSummary};
 pub use meta::{
-    create_run_dir, create_run_dir_at, read_meta, write_meta, Meta, OnComplete, Status,
+    create_run_dir, create_run_dir_at, read_meta, write_meta, Meta, OnComplete, Status, META_FILE,
+    RUNS_DIR,
 };
 
 /// Errors from every store operation — every variant names the path (or id)

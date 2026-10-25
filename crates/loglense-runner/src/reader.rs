@@ -5,6 +5,7 @@
 
 use std::fs::File;
 use std::io::{Read, Write};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::mpsc::SyncSender;
 use std::thread::JoinHandle;
 
@@ -21,6 +22,10 @@ const BINARY_SNIFF_BYTES: usize = 4096;
 /// newline-free write can never grow an unbounded line buffer.
 const MAX_LINE_BYTES: usize = 1024 * 1024;
 
+/// Process-wide pipe-read counter shared by both reader threads: the true
+/// cross-stream arrival order (the channel can reorder whole bursts).
+static READ_SEQ: AtomicU64 = AtomicU64::new(0);
+
 /// One reader-thread event for the capture loop.
 pub(crate) enum CapMsg {
     /// A decoded, ANSI-stripped line at its 1-based raw line number.
@@ -31,6 +36,8 @@ pub(crate) enum CapMsg {
         line_no: u64,
         /// Decoded, stripped line text.
         text: String,
+        /// [`READ_SEQ`] of the pipe read that completed this line.
+        read_seq: u64,
     },
     /// NUL seen in the first 4 KB: parsing disabled for this stream.
     Binary {
@@ -72,6 +79,7 @@ where
         let mut seen: usize = 0;
         let mut binary = false;
         let mut raw_failed = false;
+        let mut read_seq = 0;
         loop {
             let read = match pipe.read(&mut buf) {
                 Ok(0) => break,
@@ -85,6 +93,7 @@ where
                     break;
                 }
             };
+            read_seq = READ_SEQ.fetch_add(1, Ordering::SeqCst);
             seen += read;
             if let Err(err) = raw.write_all(&buf[..read]) {
                 if !raw_failed {
@@ -105,7 +114,7 @@ where
             }
             if !binary {
                 pending.extend_from_slice(&buf[..read]);
-                emit_lines(&tx, stream, &mut pending, &mut line_no);
+                emit_lines(&tx, stream, &mut pending, &mut line_no, read_seq);
             }
         }
         if !binary && !pending.is_empty() {
@@ -114,6 +123,7 @@ where
                 stream,
                 line_no,
                 text: decode(&pending),
+                read_seq,
             });
         }
         let _ = raw.flush();
@@ -123,7 +133,13 @@ where
 
 /// Splits `pending` on newlines, sending one message per complete line;
 /// a newline-free run past [`MAX_LINE_BYTES`] is flushed as a split line.
-fn emit_lines(tx: &SyncSender<CapMsg>, stream: Stream, pending: &mut Vec<u8>, line_no: &mut u64) {
+fn emit_lines(
+    tx: &SyncSender<CapMsg>,
+    stream: Stream,
+    pending: &mut Vec<u8>,
+    line_no: &mut u64,
+    read_seq: u64,
+) {
     loop {
         let Some(nl) = pending.iter().position(|b| *b == b'\n') else {
             if pending.len() >= MAX_LINE_BYTES {
@@ -134,6 +150,7 @@ fn emit_lines(tx: &SyncSender<CapMsg>, stream: Stream, pending: &mut Vec<u8>, li
                     stream,
                     line_no: *line_no,
                     text,
+                    read_seq,
                 });
             }
             return;
@@ -144,6 +161,7 @@ fn emit_lines(tx: &SyncSender<CapMsg>, stream: Stream, pending: &mut Vec<u8>, li
             stream,
             line_no: *line_no,
             text: decode(&line[..line.len() - 1]),
+            read_seq,
         });
     }
 }

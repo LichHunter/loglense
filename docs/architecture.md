@@ -290,7 +290,7 @@ flowchart LR
     B --> SPOOL["stdout.raw / stderr.raw<br/>(pristine, unstripped)"]
     EV --> EVENTS["events.jsonl (append, flush/event)"]
     EVENTS --> DEDUP["template dedup (LRU 10k)<br/>normalize N/H/S/P tokens"]
-    DEDUP --> SUM["summary.json at exit:<br/>counts · test totals · top ≤20 templates"]
+    DEDUP --> SUM["summary.json at exit:<br/>counts · test totals · top ≤20 error/warning templates"]
 ```
 
 Raw spools stay pristine (ANSI included); parsing works on the stripped copy. Memory is bounded: streaming everywhere, 10k-line block cap, LRU template state, and a bounded line channel between the stream readers and the parser — when parsing falls behind, the reader blocks, the pipe fills and the child is throttled instead of the backlog queueing in RAM. A GB-scale `stdout.raw` never lands in RAM (200 MB measured at under 8 MB supervisor peak RSS).
@@ -309,7 +309,8 @@ Project-local, git-style discovery (walk up from CWD to the nearest `.loglense/`
 | `.loglense/runs/<id>/meta.json` | run record | status, pids, child start time, exit, grammar version — atomic writes (temp + rename) |
 | `.loglense/runs/<id>/stdout.raw` · `stderr.raw` | pristine captured bytes | ANSI intact, never parsed in place |
 | `.loglense/runs/<id>/events.jsonl` | normalized event stream | append-only, flushed per event; readers skip a partial trailing line |
-| `.loglense/runs/<id>/summary.json` | terminal summary | severity counts, test totals, top templates, callback result — written atomically at exit; when a callback fires, one further atomic update records its result (§7) |
+| `.loglense/runs/<id>/interleave.idx` | cross-stream arrival journal (D-017) | one tiny record per pipe read chunk (stream, first line, read sequence number); feeds `tail --stream merged`; readers sort by read sequence and skip malformed records |
+| `.loglense/runs/<id>/summary.json` | terminal summary | severity counts, test totals, top error/warning templates, callback result — written atomically at exit; when a callback fires, one further atomic update records its result (§7) |
 | `.loglense/runs/<id>/callback.log` | captured completion-callback output | bounded; only present when a callback was requested (§7) |
 | `.loglense/feedback/` | agent feedback records | `<ts>-<seq>.json` record names (feedback id `f-<ts>-<seq>`); index appends are atomic |
 | `.loglense/gc.lock` | gc serialization | flock held only during gc |
@@ -451,3 +452,4 @@ Single static binary (musl, x86_64 + aarch64), pure-Rust dependency tree (rmcp/t
 | D-014 `sha2` for template ids | §4.3 |
 | D-015 `fs4` for the two advisory locks | §5 |
 | D-016 `libc` for setsid detach, group signals, TERM/INT trap | §4.2 |
+| D-017 per-read arrival journal for merged tail | §5 |

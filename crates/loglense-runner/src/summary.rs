@@ -11,11 +11,13 @@ use loglense_store::Status;
 
 use crate::RunnerError;
 
-/// One deduped template row (top-N by occurrence count).
+/// One deduped error/warning template row (errors first, then by count).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
 pub struct TemplateEntry {
     /// Id of the normalized template (links back to event `template_id`).
     pub template_id: String,
+    /// `error` or `warning` (severity of the first occurrence).
+    pub severity: String,
     /// Total occurrences of this template.
     pub count: u64,
     /// Raw line of the first occurrence.
@@ -43,7 +45,7 @@ pub struct Summary {
     pub severities: BTreeMap<String, u64>,
     /// Test events per outcome (`"passed": 4, …`), from `kind=test` events.
     pub tests: BTreeMap<String, u64>,
-    /// Top templates by count, capped by config `max_templates`.
+    /// Top error/warning templates, capped by config `max_templates`.
     pub templates: Vec<TemplateEntry>,
     /// Whether event capture was cut short (write failure / spool overflow).
     pub truncated: bool,
@@ -106,6 +108,7 @@ mod tests {
             tests: BTreeMap::new(),
             templates: vec![TemplateEntry {
                 template_id: "abc123def456".to_string(),
+                severity: "error".to_string(),
                 count: 1,
                 first_seen: 1,
                 last_seen: 1,

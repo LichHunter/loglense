@@ -137,27 +137,34 @@ fn exit_fields(status: &std::process::ExitStatus) -> (Status, Option<i32>, Optio
     }
 }
 
-/// Top-N templates by occurrence count among the surviving (LRU-hot)
-/// groups: the summary's candidate set is the first
-/// [`loglense_core::template::DEFAULT_TEMPLATE_CAP`] distinct templates, which always
-/// contains the frequently-touched ones an LRU never evicts.
+/// Top-N error/warning templates: errors before warnings, then by count
+/// (ties broken by id for determinism).
 fn top_templates(capture: &crate::pump::Capture, max: usize) -> Vec<TemplateEntry> {
-    let mut rows = capture
-        .hot_ids
-        .iter()
-        .filter_map(|id| capture.templates.get(id).map(|group| (id.clone(), group)))
-        .collect::<Vec<_>>();
-    rows.sort_by(|a, b| b.1.count.cmp(&a.1.count).then_with(|| a.0.cmp(&b.0)));
+    let mut rows: Vec<_> = capture.hot.iter().collect();
+    rows.sort_by(|a, b| {
+        severity_rank(a.1.severity)
+            .cmp(&severity_rank(b.1.severity))
+            .then_with(|| b.1.count.cmp(&a.1.count))
+            .then_with(|| a.0.cmp(b.0))
+    });
     rows.into_iter()
         .take(max)
-        .map(|(id, group)| TemplateEntry {
-            template_id: id,
-            count: group.count,
-            first_seen: group.first_seen,
-            last_seen: group.last_seen,
-            example: group.example.clone(),
+        .map(|(id, hot)| TemplateEntry {
+            template_id: id.clone(),
+            severity: crate::summary::severity_key(hot.severity).to_string(),
+            count: hot.count,
+            first_seen: hot.first_seen,
+            last_seen: hot.last_seen,
+            example: hot.example.clone(),
         })
         .collect()
+}
+
+fn severity_rank(severity: loglense_core::Severity) -> u8 {
+    match severity {
+        loglense_core::Severity::Error => 0,
+        _ => 1,
+    }
 }
 
 /// Loads the effective config for a state directory: the project's

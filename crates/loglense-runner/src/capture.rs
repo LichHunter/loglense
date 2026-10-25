@@ -8,7 +8,7 @@ use std::time::{Duration, Instant};
 
 use loglense_core::Event;
 use loglense_parsers::ParserRegistry;
-use loglense_store::{EventsWriter, StoreError};
+use loglense_store::{EventsWriter, InterleaveWriter, StoreError};
 
 use crate::pump::{Capture, EventSink, Pump, Selection};
 use crate::reader::{spawn_reader, CapMsg};
@@ -43,6 +43,7 @@ pub(crate) fn run_capture(
     let stderr = child.stderr.take();
     let mut writer = EventsWriter::open(&run_dir.join("events.jsonl"))?;
     let mut pump = Pump::new(&mut writer, registry, selection);
+    let mut interleave = InterleaveWriter::create(run_dir)?;
     let (tx, rx) = mpsc::sync_channel::<CapMsg>(CHANNEL_CAP);
     let out_raw = open_raw(run_dir, "stdout.raw")?;
     let err_raw = open_raw(run_dir, "stderr.raw")?;
@@ -83,7 +84,11 @@ pub(crate) fn run_capture(
                 stream,
                 line_no,
                 text,
-            }) => pump.handle_line(stream, line_no, &text),
+                read_seq,
+            }) => {
+                interleave.record(stream, line_no, read_seq);
+                pump.handle_line(stream, line_no, &text);
+            }
             Ok(CapMsg::Binary { stream }) => pump.handle_binary(stream),
             Ok(CapMsg::RawFailed { stream, error }) => pump.stop_parsing(format!(
                 "raw spool write failed on {stream:?} stream: {error}"

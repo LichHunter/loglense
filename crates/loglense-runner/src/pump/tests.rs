@@ -206,3 +206,27 @@ fn test_sample_deadline_release_picks_a_parser() {
     assert_eq!(capture.events, 1);
     assert_eq!(capture.parser_err.as_deref(), Some("generic"));
 }
+
+#[test]
+fn test_hot_templates_track_only_errors_and_warnings() {
+    let (mut sink, _events) = recording();
+    let reg = registry();
+    let mut pump = Pump::new(&mut sink, &reg, Selection::Named("generic".to_string()));
+    pump.handle_line(Stream::Out, 1, "ERROR boom 1");
+    for line in 2..=50 {
+        pump.handle_line(Stream::Out, line, "compiling crate");
+    }
+    pump.handle_line(Stream::Out, 51, "WARNING: slow 3");
+    pump.handle_line(Stream::Out, 52, "ERROR boom 22");
+    pump.handle_eof(Stream::Out);
+    let capture = pump.into_capture();
+    assert_eq!(capture.hot.len(), 2, "info lines never enter the hot set");
+    let boom = capture
+        .hot
+        .values()
+        .find(|hot| hot.severity == loglense_core::Severity::Error)
+        .expect("error template tracked");
+    assert_eq!(boom.count, 2);
+    assert_eq!((boom.first_seen, boom.last_seen), (1, 52));
+    assert_eq!(boom.example, "ERROR boom 1");
+}

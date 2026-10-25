@@ -12,7 +12,7 @@ use std::collections::BTreeMap;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
 use loglense_core::template::TemplateGroups;
-use loglense_core::{Event, Kind, Stream};
+use loglense_core::{Event, Kind, Severity, Stream};
 use loglense_parsers::{detect_from_sample, Chain, LineCtx, MultiChainState, ParserRegistry};
 use loglense_store::StoreError;
 
@@ -27,9 +27,27 @@ pub(crate) const SAMPLE_MAX_LINES: usize = 50;
 pub(crate) const SAMPLE_WINDOW: std::time::Duration = std::time::Duration::from_secs(2);
 /// Consecutive claimed-but-silent lines before a block is force-flushed.
 pub(crate) const BLOCK_CAP: u64 = 10_000;
-/// Distinct template ids tracked for the summary's top-N selection
-/// (mirrors the dedup tracker's LRU cap so memory stays bounded).
+/// Distinct error/warning templates tracked for the summary's top-N
+/// selection; ids first seen beyond the cap are not tracked (bounded
+/// memory), while already-tracked ones keep counting.
 const HOT_CAP: usize = 10_000;
+
+/// One error/warning template's run-wide accounting. Kept outside the LRU
+/// dedup tracker so a flood of distinct info lines can never evict (and
+/// reset the count of) a recurring error.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct HotTemplate {
+    /// Severity of the first occurrence (error or warning).
+    pub severity: Severity,
+    /// Total occurrences.
+    pub count: u64,
+    /// Raw line of the first occurrence.
+    pub first_seen: u64,
+    /// Raw line of the latest occurrence.
+    pub last_seen: u64,
+    /// The first occurrence's message.
+    pub example: String,
+}
 
 /// How the run selected its parsers: an explicit name or per-stream detect.
 pub(crate) enum Selection {
@@ -56,8 +74,8 @@ pub(crate) struct Capture {
     pub tests: BTreeMap<String, u64>,
     /// Template dedup tracker (LRU-capped).
     pub templates: TemplateGroups,
-    /// Distinct template ids seen first (bounded, feeds top-N selection).
-    pub hot_ids: Vec<String>,
+    /// Error/warning templates by id (bounded, feeds top-N selection).
+    pub hot: std::collections::HashMap<String, HotTemplate>,
     /// Set when a spool write failed: parsing stops, raw capture continues.
     pub truncated: Option<String>,
     /// Parser detected for stdout (autodetect only).
@@ -120,8 +138,6 @@ pub(crate) struct Pump<'a> {
     out: Lane,
     err: Lane,
     seq: u64,
-    hot_seen: std::collections::HashSet<String>,
-    hot_ids: Vec<String>,
     capture: Capture,
 }
 
@@ -142,8 +158,6 @@ impl<'a> Pump<'a> {
             out,
             err,
             seq: 0,
-            hot_seen: std::collections::HashSet::new(),
-            hot_ids: Vec::new(),
             capture: Capture::default(),
         };
         if let Selection::Named(name) = &pump.selection {
@@ -313,8 +327,8 @@ impl<'a> Pump<'a> {
             event.ts_ms = now_ms();
             let line = event.lines.first().copied().unwrap_or_default();
             let template_id = self.capture.templates.record(&event.message, line);
-            if self.hot_seen.insert(template_id.clone()) && self.hot_ids.len() < HOT_CAP {
-                self.hot_ids.push(template_id.clone());
+            if matches!(event.severity, Severity::Error | Severity::Warning) {
+                self.track_hot(&template_id, &event, line);
             }
             event.template_id = Some(template_id);
             *self
@@ -335,6 +349,25 @@ impl<'a> Pump<'a> {
         }
     }
 
+    fn track_hot(&mut self, template_id: &str, event: &Event, line: u64) {
+        let hot = &mut self.capture.hot;
+        if let Some(entry) = hot.get_mut(template_id) {
+            entry.count += 1;
+            entry.last_seen = line;
+        } else if hot.len() < HOT_CAP {
+            hot.insert(
+                template_id.to_string(),
+                HotTemplate {
+                    severity: event.severity,
+                    count: 1,
+                    first_seen: line,
+                    last_seen: line,
+                    example: event.message.clone(),
+                },
+            );
+        }
+    }
+
     /// Spool unusable: stop parsing both streams (raw capture continues).
     pub(crate) fn stop_parsing(&mut self, reason: String) {
         self.capture.truncated = Some(reason);
@@ -345,7 +378,6 @@ impl<'a> Pump<'a> {
     /// Consumes the pump, yielding the run's capture accounting.
     pub(crate) fn into_capture(mut self) -> Capture {
         let mut capture = std::mem::take(&mut self.capture);
-        capture.hot_ids = std::mem::take(&mut self.hot_ids);
         capture.parser_out = self.out.detected;
         capture.parser_err = self.err.detected;
         capture
