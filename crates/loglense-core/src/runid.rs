@@ -24,23 +24,50 @@ const ALPHABET: &[u8; 32] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 pub enum RunIdError {
     /// The id is not 15 characters long.
     #[error("invalid run id `{input}`: expected 15 chars `YYYYMMDD-XXXXXX`, found {len}")]
-    InvalidLength { input: String, len: usize },
+    InvalidLength {
+        /// The rejected input.
+        input: String,
+        /// Its actual length.
+        len: usize,
+    },
     /// The id lacks the `-` separator between date and random part.
     #[error("invalid run id `{input}`: expected `-` at position 8")]
-    MissingSeparator { input: String },
+    MissingSeparator {
+        /// The rejected input.
+        input: String,
+    },
     /// The id contains a character outside the allowed charset for its position.
     #[error("invalid run id `{input}`: invalid character `{ch}` at position {pos}")]
-    InvalidCharacter { input: String, ch: char, pos: usize },
+    InvalidCharacter {
+        /// The rejected input.
+        input: String,
+        /// The offending character.
+        ch: char,
+        /// Its 0-based position.
+        pos: usize,
+    },
     /// The date part is not a valid calendar date.
     #[error("invalid run id `{input}`: `{date}` is not a valid calendar date")]
-    InvalidDate { input: String, date: String },
+    InvalidDate {
+        /// The rejected input.
+        input: String,
+        /// The date part that failed to parse.
+        date: String,
+    },
     /// Every create attempt collided with an existing run directory.
     #[error("run id collision: no free run directory under {root} after {tries} tries")]
-    CollisionExhausted { root: PathBuf, tries: u8 },
+    CollisionExhausted {
+        /// The `runs/` directory searched.
+        root: PathBuf,
+        /// Attempts made.
+        tries: u8,
+    },
     /// Creating the run directory failed with an unexpected I/O error.
     #[error("creating run directory {path} failed: {source}")]
     DirCreate {
+        /// The run directory that could not be created.
         path: PathBuf,
+        /// Underlying I/O error.
         source: std::io::Error,
     },
 }

@@ -6,6 +6,7 @@
 use schemars::JsonSchema;
 use serde::Deserialize;
 
+/// `start_run` parameters.
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct StartRunArgs {
     /// Command argv to run detached, e.g. ["cargo", "test"].
@@ -24,6 +25,7 @@ pub struct StartRunArgs {
     pub on_complete_timeout_ms: Option<u64>,
 }
 
+/// `list_runs` parameters.
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct ListRunsArgs {
     /// Absolute project directory whose `.loglense/` store to list.
@@ -34,6 +36,7 @@ pub struct ListRunsArgs {
     pub limit: Option<u32>,
 }
 
+/// `get_run` / `kill_run` parameters: one run, optionally located by `cwd`.
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct RunRef {
     /// Run id as returned by start_run / list_runs (e.g. "20261025-A3F8C2").
@@ -43,6 +46,7 @@ pub struct RunRef {
     pub cwd: Option<String>,
 }
 
+/// `get_events` parameters.
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct GetEventsArgs {
     /// Run id.
@@ -59,6 +63,7 @@ pub struct GetEventsArgs {
     pub offset: Option<u32>,
 }
 
+/// `get_log` parameters.
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct GetLogArgs {
     /// Run id.
@@ -73,6 +78,7 @@ pub struct GetLogArgs {
     pub from_line: Option<u64>,
 }
 
+/// `wait_run` parameters.
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct WaitRunArgs {
     /// Run id.
@@ -83,6 +89,7 @@ pub struct WaitRunArgs {
     pub timeout_ms: Option<u64>,
 }
 
+/// `leave_feedback` parameters.
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct LeaveFeedbackArgs {
     /// Run id the feedback is about.
@@ -101,6 +108,10 @@ pub struct LeaveFeedbackArgs {
     pub snippet: Option<String>,
 }
 
+/// Run state family filter (`interrupted` = orphaned or lost).
+// Variant names are the wire values; doc comments on them would turn the
+// compact JSON-schema `enum` agents read into a verbose `oneOf`.
+#[allow(missing_docs)]
 #[derive(Debug, Clone, Copy, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum StatusParam {
@@ -115,6 +126,10 @@ pub enum StatusParam {
     Lost,
 }
 
+/// Event severity, worst to mildest.
+// Variant names are the wire values; doc comments on them would turn the
+// compact JSON-schema `enum` agents read into a verbose `oneOf`.
+#[allow(missing_docs)]
 #[derive(Debug, Clone, Copy, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum SeverityParam {
@@ -125,6 +140,10 @@ pub enum SeverityParam {
     Debug,
 }
 
+/// Event kind.
+// Variant names are the wire values; doc comments on them would turn the
+// compact JSON-schema `enum` agents read into a verbose `oneOf`.
+#[allow(missing_docs)]
 #[derive(Debug, Clone, Copy, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum KindParam {
@@ -134,6 +153,10 @@ pub enum KindParam {
     Test,
 }
 
+/// Captured output to read (`both` = arrival order).
+// Variant names are the wire values; doc comments on them would turn the
+// compact JSON-schema `enum` agents read into a verbose `oneOf`.
+#[allow(missing_docs)]
 #[derive(Debug, Clone, Copy, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum LogStreamParam {
@@ -142,6 +165,10 @@ pub enum LogStreamParam {
     Both,
 }
 
+/// Feedback report kind.
+// Variant names are the wire values; doc comments on them would turn the
+// compact JSON-schema `enum` agents read into a verbose `oneOf`.
+#[allow(missing_docs)]
 #[derive(Debug, Clone, Copy, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum FeedbackKind {
@@ -153,6 +180,7 @@ pub enum FeedbackKind {
 }
 
 impl FeedbackKind {
+    /// Wire name (`parse-miss`, …) as stored in feedback records.
     pub fn as_str(self) -> &'static str {
         match self {
             FeedbackKind::ParseMiss => "parse-miss",
@@ -165,6 +193,7 @@ impl FeedbackKind {
 }
 
 impl SeverityParam {
+    /// The core severity.
     pub fn severity(self) -> loglense_core::Severity {
         use loglense_core::Severity;
         match self {
@@ -176,6 +205,7 @@ impl SeverityParam {
         }
     }
 
+    /// Wire name (`error`, …).
     pub fn as_str(self) -> &'static str {
         match self {
             SeverityParam::Error => "error",
@@ -188,6 +218,7 @@ impl SeverityParam {
 }
 
 impl KindParam {
+    /// The core event kind.
     pub fn kind(self) -> loglense_core::Kind {
         use loglense_core::Kind;
         match self {
@@ -200,6 +231,7 @@ impl KindParam {
 }
 
 impl StatusParam {
+    /// The store listing filter.
     pub fn filter(self) -> loglense_store::query::StatusFilter {
         use loglense_store::query::StatusFilter;
         match self {
