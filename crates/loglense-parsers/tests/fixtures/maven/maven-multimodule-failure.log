@@ -1,0 +1,24 @@
+[INFO] Scanning for projects...
+[INFO] ------------------------< com.example:parent >------------------------
+[INFO] Building parent 1.0.0
+[INFO] --- maven-surefire-plugin:3.0.0:test (default-test) @ core ---
+[INFO]
+[ERROR] Tests run: 4, Failures: 1, Errors: 1, Skipped: 0, Time elapsed: 0.912 s -- in com.example.core.OrderServiceTest
+[ERROR]   placeOrder(Time elapsed: 0.301 s)  <<< FAILURE!
+java.lang.AssertionError: expected:<2> but was:<3>
+    at com.example.core.OrderServiceTest.testPlaceOrder(OrderServiceTest.java:31)
+    at java.lang.reflect.Method.invoke(Method.java:568)
+Caused by: java.lang.NullPointerException: order repository was null
+        at com.example.core.OrderRepository.save(OrderRepository.java:88)
+        ... 2 more
+[INFO]
+[ERROR] Tests run: 4, Failures: 1, Errors: 1, Skipped: 0
+[INFO] Reactor Summary for com.example:parent 1.0.0:
+[INFO]
+[INFO] core ....................................... FAILURE [  0.512 s]
+[INFO] webapp .................................... SKIPPED
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  3.400 s
+[INFO] Finished at: 2026-10-25T10:15:00+02:00

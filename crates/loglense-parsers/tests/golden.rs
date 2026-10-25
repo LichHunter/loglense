@@ -32,8 +32,10 @@ struct Case {
 fn parser_for(dir: &str) -> Option<Box<dyn Parser>> {
     match dir {
         "generic" => Some(Box::new(loglense_parsers::bases::generic::GenericParser)),
+        "java" => Some(Box::new(loglense_parsers::bases::java::JavaParser)),
         "json" => Some(Box::new(loglense_parsers::bases::json::JsonParser)),
         "logfmt" => Some(Box::new(loglense_parsers::bases::logfmt::LogfmtParser)),
+        "maven" => Some(Box::new(loglense_parsers::tools::maven::MavenParser)),
         _ => None,
     }
 }

@@ -1,0 +1,38 @@
+[
+  {
+    "seq": 1,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "line",
+    "message": "Failed to start connector",
+    "lines": [1]
+  },
+  {
+    "seq": 2,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "warning",
+    "kind": "line",
+    "message": "Connection pool nearly empty",
+    "lines": [2]
+  },
+  {
+    "seq": 3,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "line",
+    "message": "Server started on port 8080",
+    "lines": [3]
+  },
+  {
+    "seq": 4,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "debug",
+    "kind": "line",
+    "message": "Retry policy armed",
+    "lines": [5]
+  }
+]

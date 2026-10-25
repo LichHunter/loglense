@@ -1,0 +1,2 @@
+com.example.WidgetFactoryException: widget line malformed
+    at com.example.WidgetFactory.parse(WidgetFactory.java:31)

@@ -8,15 +8,18 @@
 //! - [`detect`] — autodetection over the buffered sample.
 //! - [`pack`] — TOML pack grammar (schema = 1) loader.
 //!
-//! Concrete parsers (task T7+): [`bases`] ships the format bases
-//! `generic`/`json`/`logfmt`; lang bases and tool parsers land in later
-//! waves, registered through [`bases::register`].
+//! Concrete parsers: [`bases`] ships the format bases `generic`/`json`/
+//! `logfmt` plus the `java` lang base; [`tools`] ships tool parsers that
+//! extend a lang base (`maven` → `java`). Later waves add the remaining
+//! lang bases and tools, registered through [`bases::register`] and
+//! [`tools::register`].
 
 pub mod bases;
 pub mod chain;
 pub mod detect;
 pub mod pack;
 pub mod registry;
+pub mod tools;
 pub mod traits;
 
 pub use chain::{Chain, MultiChainState};

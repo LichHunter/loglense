@@ -17,12 +17,15 @@ fn ctx(line_no: u64) -> LineCtx {
     }
 }
 
-/// Feed every line through every base parser; panics fail the test.
+/// Feed every line through every base parser plus the java lang base and
+/// the maven tool; panics fail the test.
 fn feed_all(lines: &[&str]) {
     let parsers: Vec<Box<dyn Parser>> = vec![
         Box::new(GenericParser),
         Box::new(JsonParser),
         Box::new(LogfmtParser),
+        Box::new(loglense_parsers::bases::java::JavaParser),
+        Box::new(loglense_parsers::tools::maven::MavenParser),
     ];
     for (idx, line) in lines.iter().enumerate() {
         for parser in &parsers {
@@ -88,7 +91,7 @@ fn ansi_escape_soup_never_panics_and_is_info() {
 }
 
 #[test]
-fn fifty_blank_lines_then_maven_text_detects_generic_and_never_panics() {
+fn fifty_blank_lines_then_maven_text_never_panics_and_detects_java_not_maven() {
     let maven = [
         "[ERROR] Failed to execute goal on project app",
         "[INFO] BUILD FAILURE",
@@ -98,9 +101,11 @@ fn fifty_blank_lines_then_maven_text_detects_generic_and_never_panics() {
     lines.extend(maven.iter().map(|line| line.to_string()));
     let refs: Vec<&str> = lines.iter().map(String::as_str).collect();
     feed_all(&refs);
-    // No maven module is registered yet (T8), no line is JSON or logfmt, so
-    // autodetection must fall back to generic.
-    assert_eq!(detect_from_sample(&registry(), &refs), "generic");
+    // The registry() helper registers the bases only (no tools::register),
+    // so maven itself is absent: the java base legitimately claims the two
+    // bracket lines (score 60) and wins over the generic fallback. The
+    // totals line stays unrecognized until the maven tool joins the chain.
+    assert_eq!(detect_from_sample(&registry(), &refs), "java");
     assert_eq!(
         generic_severity(maven[0]),
         Severity::Error,

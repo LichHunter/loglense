@@ -1,0 +1,29 @@
+[
+  {
+    "seq": 1,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "line",
+    "message": "maven home detected",
+    "lines": [1]
+  },
+  {
+    "seq": 2,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "summary",
+    "message": "Tests run: 3, Failures: 0, Errors: 0, Skipped: 0",
+    "lines": [2]
+  },
+  {
+    "seq": 3,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "summary",
+    "message": "BUILD SUCCESS",
+    "lines": [3]
+  }
+]

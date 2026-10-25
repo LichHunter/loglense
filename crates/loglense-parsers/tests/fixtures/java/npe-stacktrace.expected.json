@@ -1,0 +1,17 @@
+[
+  {
+    "seq": 1,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "line",
+    "message": "java.lang.IllegalStateException: checkout failed ... caused by java.lang.NullPointerException: cart is null",
+    "lines": [1, 2, 3, 4, 5, 6, 7],
+    "frames": [
+      "at com.example.controller.CartController.checkout(CartController.java:45)",
+      "at com.example.service.OrderService.total(OrderService.java:87)",
+      "at com.example.service.OrderService.validate(OrderService.java:120)",
+      "at java.lang.reflect.Method.invoke(Method.java:568)"
+    ]
+  }
+]

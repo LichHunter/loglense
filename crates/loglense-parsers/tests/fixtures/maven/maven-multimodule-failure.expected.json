@@ -1,0 +1,180 @@
+[
+  {
+    "seq": 1,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "line",
+    "message": "Scanning for projects...",
+    "lines": [1]
+  },
+  {
+    "seq": 2,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "line",
+    "message": "------------------------< com.example:parent >------------------------",
+    "lines": [2]
+  },
+  {
+    "seq": 3,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "line",
+    "message": "Building parent 1.0.0",
+    "lines": [3]
+  },
+  {
+    "seq": 4,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "line",
+    "message": "--- maven-surefire-plugin:3.0.0:test (default-test) @ core ---",
+    "lines": [4]
+  },
+  {
+    "seq": 5,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "line",
+    "message": "",
+    "lines": [5]
+  },
+  {
+    "seq": 6,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "summary",
+    "message": "Tests run: 4, Failures: 1, Errors: 1, Skipped: 0",
+    "lines": [6]
+  },
+  {
+    "seq": 7,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "line",
+    "message": "placeOrder(Time elapsed: 0.301 s)  <<< FAILURE!",
+    "lines": [7]
+  },
+  {
+    "seq": 8,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "line",
+    "message": "java.lang.AssertionError: expected:<2> but was:<3> ... caused by java.lang.NullPointerException: order repository was null",
+    "lines": [8, 9, 10, 11, 12, 13],
+    "frames": [
+      "at com.example.core.OrderServiceTest.testPlaceOrder(OrderServiceTest.java:31)",
+      "at java.lang.reflect.Method.invoke(Method.java:568)",
+      "at com.example.core.OrderRepository.save(OrderRepository.java:88)"
+    ]
+  },
+  {
+    "seq": 9,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "line",
+    "message": "",
+    "lines": [14]
+  },
+  {
+    "seq": 10,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "summary",
+    "message": "Tests run: 4, Failures: 1, Errors: 1, Skipped: 0",
+    "lines": [15]
+  },
+  {
+    "seq": 11,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "line",
+    "message": "Reactor Summary for com.example:parent 1.0.0:",
+    "lines": [16]
+  },
+  {
+    "seq": 12,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "line",
+    "message": "",
+    "lines": [17]
+  },
+  {
+    "seq": 13,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "phase",
+    "message": "core: FAILURE",
+    "phase": "core",
+    "lines": [18]
+  },
+  {
+    "seq": 14,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "phase",
+    "message": "webapp: SKIPPED",
+    "phase": "webapp",
+    "lines": [19]
+  },
+  {
+    "seq": 15,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "line",
+    "message": "------------------------------------------------------------------------",
+    "lines": [20]
+  },
+  {
+    "seq": 16,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "summary",
+    "message": "BUILD FAILURE",
+    "lines": [21]
+  },
+  {
+    "seq": 17,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "line",
+    "message": "------------------------------------------------------------------------",
+    "lines": [22]
+  },
+  {
+    "seq": 18,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "line",
+    "message": "Total time:  3.400 s",
+    "lines": [23]
+  },
+  {
+    "seq": 19,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "info",
+    "kind": "line",
+    "message": "Finished at: 2026-10-25T10:15:00+02:00",
+    "lines": [24]
+  }
+]

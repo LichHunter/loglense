@@ -1,0 +1,14 @@
+[
+  {
+    "seq": 1,
+    "ts_ms": 0,
+    "stream": "out",
+    "severity": "error",
+    "kind": "line",
+    "message": "com.example.WidgetFactoryException: widget line malformed",
+    "lines": [1, 2],
+    "frames": [
+      "at com.example.WidgetFactory.parse(WidgetFactory.java:31)"
+    ]
+  }
+]

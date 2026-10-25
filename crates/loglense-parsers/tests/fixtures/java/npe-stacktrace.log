@@ -1,0 +1,7 @@
+java.lang.IllegalStateException: checkout failed
+    at com.example.controller.CartController.checkout(CartController.java:45)
+    at com.example.service.OrderService.total(OrderService.java:87)
+Caused by: java.lang.NullPointerException: cart is null
+        at com.example.service.OrderService.validate(OrderService.java:120)
+        at java.lang.reflect.Method.invoke(Method.java:568)
+        ... 2 more
