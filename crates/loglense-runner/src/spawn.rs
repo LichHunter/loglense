@@ -47,6 +47,10 @@ pub struct SpawnRequest {
     /// Completion callback fired by the supervisor at the terminal state
     /// (D-011), stored in meta.
     pub on_complete: Option<OnComplete>,
+    /// Version recorded in meta (and from there in feedback records);
+    /// binaries pass their git-stamped version. Defaults to the crate
+    /// version.
+    pub tool_version: Option<String>,
 }
 
 impl SpawnRequest {
@@ -59,6 +63,7 @@ impl SpawnRequest {
             parser: None,
             supervisor_exe: None,
             on_complete: None,
+            tool_version: None,
         }
     }
 }
@@ -103,7 +108,10 @@ pub fn spawn_run(state: &Path, req: SpawnRequest) -> Result<SpawnOutcome, Runner
         signal: None,
         started_at_ms: crate::pump::now_ms(),
         ended_at_ms: None,
-        tool_version: env!("CARGO_PKG_VERSION").to_string(),
+        tool_version: req
+            .tool_version
+            .clone()
+            .unwrap_or_else(|| env!("CARGO_PKG_VERSION").to_string()),
         schema_version: 1,
         on_complete: req.on_complete.clone(),
     };

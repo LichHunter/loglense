@@ -9,7 +9,7 @@ use clap::{Args, Parser, Subcommand, ValueEnum};
 #[derive(Debug, Parser)]
 #[command(
     name = "loglense",
-    version,
+    version = env!("LOGLENSE_VERSION"),
     subcommand_required = true,
     arg_required_else_help = true
 )]

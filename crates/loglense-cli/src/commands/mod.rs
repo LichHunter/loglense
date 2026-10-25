@@ -47,11 +47,12 @@ pub(crate) fn execute(cli: Cli) -> Result<u8, CliError> {
         Command::Feedback(cmd) => feedback::feedback(&ctx, cmd),
         Command::Notify(cmd) => notify::notify(cmd),
         Command::Mcp => {
-            loglense_mcp::serve_stdio().map_err(|err| CliError::Mcp(err.to_string()))?;
+            loglense_mcp::serve_stdio(env!("LOGLENSE_VERSION"))
+                .map_err(|err| CliError::Mcp(err.to_string()))?;
             Ok(0)
         }
         Command::Version => {
-            println!("loglense {}", env!("CARGO_PKG_VERSION"));
+            println!("loglense {}", env!("LOGLENSE_VERSION"));
             Ok(0)
         }
     }

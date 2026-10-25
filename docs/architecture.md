@@ -413,7 +413,16 @@ flowchart LR
 
 ## 9. Distribution
 
-Single static binary (musl, x86_64 + aarch64), pure-Rust dependency tree (rmcp/tokio/serde/clap/regex — no openssl, no glibc-only crates). `loglense --version` embeds the git rev; feedback records carry it. One binary serves both surfaces — `.mcp.json` wiring is `{"command": "loglense", "args": ["mcp"]}`. Dev environment: devenv+direnv for dev; minimal packages-only flake (native, later static outputs) for NixOS consumption; static artifacts also buildable via cargo from the dev shell.
+Single static binary (musl, x86_64 + aarch64), pure-Rust dependency tree (rmcp/tokio/serde/clap/regex — no openssl, no glibc-only crates, no HTTP client). `loglense --version` prints `<version>+<short git rev>` (`dev` without git; the flake passes its own rev since the store has no `.git`); run meta records the same string, so feedback records carry it. One binary serves both surfaces — `.mcp.json` wiring is `{"command": "loglense", "args": ["mcp"]}` — and is also its own supervisor (`loglense __supervisor <run-dir>`). Dev environment: devenv+direnv for dev; a packages-only flake for NixOS consumption and releases:
+
+| Flake output | Artifact |
+|---|---|
+| `loglense` (default) | native build |
+| `loglense-static` | x86_64 musl, statically linked (`ldd`: not a dynamic executable) |
+| `loglense-static-aarch64` | aarch64 musl, statically linked (cross) |
+| `tarball` · `tarball-aarch64` | `loglense-<ver>-<target>.tar.gz`: the binary + README |
+
+Static artifacts are also buildable via cargo from the dev shell.
 
 ---
 

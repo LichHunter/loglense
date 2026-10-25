@@ -191,6 +191,11 @@ fn feedback_round_trip_leave_list_show_resolve() {
     assert_eq!(shown["record"]["expected"], "error");
     assert_eq!(shown["record"]["parser"], "generic");
     assert_eq!(shown["record"]["line"], 1);
+    let version = shown["record"]["tool_version"].as_str().unwrap();
+    assert!(
+        version.starts_with(&format!("{}+", env!("CARGO_PKG_VERSION"))),
+        "feedback carries the git-stamped version: {version}"
+    );
 
     let resolved = project.json(
         &[

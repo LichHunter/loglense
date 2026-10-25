@@ -14,10 +14,17 @@ fn version_flag_prints_name_and_version() {
     let project = Project::new();
     let out = project.cmd(&["--version"]);
     assert_eq!(out.status.code(), Some(0));
-    assert_eq!(
-        String::from_utf8_lossy(&out.stdout).trim(),
-        format!("loglense {}", env!("CARGO_PKG_VERSION"))
+    let printed = String::from_utf8_lossy(&out.stdout).trim().to_string();
+    let prefix = format!("loglense {}+", env!("CARGO_PKG_VERSION"));
+    let rev = printed
+        .strip_prefix(&prefix)
+        .unwrap_or_else(|| panic!("{printed}"));
+    assert!(
+        rev == "dev" || (!rev.is_empty() && rev.chars().all(|c| c.is_ascii_hexdigit())),
+        "short git rev or dev: {printed}"
     );
+    let subcommand = project.cmd(&["version"]);
+    assert_eq!(String::from_utf8_lossy(&subcommand.stdout).trim(), printed);
 }
 
 #[test]
@@ -338,4 +345,18 @@ fn merged_tail_follows_arrival_order_across_streams() {
     let last_two = project.json(&["tail", &id, "--lines", "2"], 0);
     assert_eq!(last_two["lines"][0]["text"], "a2");
     assert_eq!(last_two["lines"][1]["text"], "b2");
+}
+
+#[test]
+fn unwritable_directory_fails_cleanly_with_a_hint() {
+    use std::os::unix::fs::PermissionsExt as _;
+    let project = Project::new();
+    let locked = project.root.parent().unwrap().join("locked");
+    std::fs::create_dir(&locked).unwrap();
+    std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o555)).unwrap();
+    let out = project.cmd_in(&locked, &["true"]);
+    std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o755)).unwrap();
+    assert_clean_failure(&out, 2);
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(stderr.contains("LOGLENSE_STATE_DIR"), "{stderr}");
 }

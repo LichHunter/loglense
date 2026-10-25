@@ -53,7 +53,7 @@ impl Ctx {
         match loglense_store::discover(&cwd, &home()) {
             Ok(state) => Ok(state),
             Err(StoreError::StateDirNotFound { .. }) => {
-                Ok(loglense_store::create(&cwd, &home(), false)?)
+                loglense_store::create(&cwd, &home(), false).map_err(unwritable_hint)
             }
             Err(err) => Err(err.into()),
         }
@@ -62,6 +62,25 @@ impl Ctx {
     /// The explicit override, if any (used by `init`).
     pub(crate) fn override_dir(&self) -> Option<PathBuf> {
         self.explicit()
+    }
+}
+
+/// Store creation failed for lack of write access: say how to fix it.
+fn unwritable_hint(err: StoreError) -> CliError {
+    match err {
+        StoreError::Io { path, source }
+            if matches!(
+                source.kind(),
+                std::io::ErrorKind::PermissionDenied | std::io::ErrorKind::ReadOnlyFilesystem
+            ) =>
+        {
+            CliError::Usage(format!(
+                "cannot create {}: {source}; run from a writable project directory, or point \
+                 --dir / LOGLENSE_STATE_DIR at a writable store",
+                path.display()
+            ))
+        }
+        other => other.into(),
     }
 }
 

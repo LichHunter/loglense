@@ -11,6 +11,7 @@ pub(crate) fn run(ctx: &Ctx, args: RunArgs) -> Result<u8, CliError> {
     let state = ctx.writer_state()?;
     let mut request = SpawnRequest::new(args.cmd, context::current_dir()?);
     request.parser = args.parser;
+    request.tool_version = Some(env!("LOGLENSE_VERSION").to_string());
     request.on_complete = args.on_complete.map(|command| loglense_store::OnComplete {
         command,
         timeout_ms: args.on_complete_timeout,

@@ -55,6 +55,7 @@ working directory. leave_feedback reports parser misses.";
 pub struct LoglenseServer {
     known: Arc<KnownStores>,
     supervisor_exe: Option<PathBuf>,
+    tool_version: Option<String>,
     #[allow(dead_code)] // read by the #[tool_handler] expansion
     tool_router: ToolRouter<LoglenseServer>,
 }
@@ -71,8 +72,15 @@ impl LoglenseServer {
         Self {
             known: Arc::new(KnownStores::default()),
             supervisor_exe: None,
+            tool_version: None,
             tool_router: Self::tool_router(),
         }
+    }
+
+    /// Version recorded in run meta (the binary's git-stamped version).
+    pub fn with_tool_version(mut self, version: impl Into<String>) -> Self {
+        self.tool_version = Some(version.into());
+        self
     }
 
     /// Overrides the supervisor binary (tests embedding the server).
@@ -93,6 +101,7 @@ impl LoglenseServer {
     ) -> Result<CallToolResult, rmcp::ErrorData> {
         let known = Arc::clone(&self.known);
         let supervisor_exe = self.supervisor_exe.clone();
+        let tool_version = self.tool_version.clone();
         blocking(move || {
             if args.cmd.is_empty() {
                 return Err("`cmd` must name a command".to_string());
@@ -101,6 +110,7 @@ impl LoglenseServer {
             let mut request = SpawnRequest::new(args.cmd, PathBuf::from(&args.cwd));
             request.parser = args.parser;
             request.supervisor_exe = supervisor_exe;
+            request.tool_version = tool_version;
             request.on_complete = args.on_complete.map(|command| loglense_store::OnComplete {
                 command,
                 timeout_ms: args.on_complete_timeout_ms.unwrap_or(CALLBACK_TIMEOUT_MS),
@@ -357,12 +367,13 @@ fn now_ms() -> i64 {
 /// Serves MCP over stdio until the client disconnects. A client that closes
 /// stdin before initializing (e.g. `loglense mcp < /dev/null`) is a clean
 /// exit, not an error.
-pub fn serve_stdio() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+pub fn serve_stdio(tool_version: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()?;
     runtime.block_on(async {
-        let running = match LoglenseServer::new().serve(rmcp::transport::stdio()).await {
+        let server = LoglenseServer::new().with_tool_version(tool_version);
+        let running = match server.serve(rmcp::transport::stdio()).await {
             Ok(running) => running,
             Err(rmcp::service::ServerInitializeError::ConnectionClosed(_)) => return Ok(()),
             Err(err) => return Err(err.into()),
