@@ -1,8 +1,7 @@
-//! `errors` / `warnings`: one severity's events, oldest first. Streams
-//! `events.jsonl` (memory holds only the shown events) and counts the rest.
+//! `errors` / `warnings`: one severity's events, oldest first, bounded.
 
-use loglense_core::{Event, Severity, Stream};
-use loglense_store::scan_events;
+use loglense_core::Severity;
+use loglense_store::query::{self, EventFilter};
 
 use crate::cli::EventsArgs;
 use crate::context::{self, Ctx};
@@ -38,70 +37,54 @@ pub(crate) fn events(ctx: &Ctx, args: EventsArgs, filter: Filter) -> Result<u8, 
         Some(max) => usize::try_from(max).unwrap_or(usize::MAX),
         None => context::config(&state)?.output.max_events,
     };
-    let mut shown: Vec<Event> = Vec::new();
-    let mut total = 0usize;
-    let read = scan_events(&run_dir.join("events.jsonl"), |event| {
-        if event.severity != filter.severity() {
-            return;
-        }
-        total += 1;
-        if shown.len() < max {
-            shown.push(bounded(event));
-        }
-    })?;
-    if read.skipped > 0 {
+    let selection = EventFilter {
+        severity: Some(filter.severity()),
+        kind: None,
+    };
+    let page = query::events(&run_dir, selection, 0, max)?;
+    if page.skipped_lines > 0 {
         eprintln!(
             "loglense: warning: skipped {} unreadable line(s) in {}",
-            read.skipped,
+            page.skipped_lines,
             run_dir.join("events.jsonl").display()
         );
     }
     if ctx.json {
         output::json(&serde_json::json!({
             "run_id": args.run_id,
-            "events": shown,
-            "total": total,
-            "shown": shown.len(),
+            "events": page.events,
+            "total": page.total,
+            "shown": page.shown,
         }));
         return Ok(0);
     }
-    if shown.is_empty() {
+    if page.events.is_empty() {
         println!("no {} in run {}", filter.noun(), args.run_id);
         return Ok(0);
     }
-    for event in &shown {
-        let stream = match event.stream {
-            Stream::Out => "out",
-            Stream::Err => "err",
-        };
+    for event in &page.events {
         let line = event.lines.first().copied().unwrap_or(0);
         let source = event
             .source
             .as_ref()
             .map(|s| format!(" ({}:{})", s.file, s.line))
             .unwrap_or_default();
-        println!("L{line:<6} {stream}  {}{source}", event.message);
+        println!(
+            "L{line:<6} {}  {}{source}",
+            query::stream_name(event.stream),
+            event.message
+        );
         for frame in &event.frames {
             println!("           {frame}");
         }
     }
-    if total > shown.len() {
+    if page.total > page.shown {
         println!(
-            "({} of {total} {} shown; --max to change)",
-            shown.len(),
+            "({} of {} {} shown; --max to change)",
+            page.shown,
+            page.total,
             filter.noun()
         );
     }
     Ok(0)
-}
-
-/// Caps one event's message and frame list for output.
-fn bounded(mut event: Event) -> Event {
-    event.message = output::clip(&event.message);
-    if event.frames.len() > output::MAX_FRAMES {
-        let more = event.frames.len() - output::MAX_FRAMES;
-        event.frames.truncate(output::MAX_FRAMES);
-        event.frames.push(format!("… {more} more frames"));
-    }
-    event
 }

@@ -26,6 +26,9 @@ pub(crate) enum CliError {
     /// The requested subcommand ships in a later task.
     #[error("`loglense {0}` is not implemented yet")]
     NotImplemented(&'static str),
+    /// The MCP server stopped with a protocol or transport failure.
+    #[error("mcp server: {0}")]
+    Mcp(String),
     #[error("{path}: {source}")]
     Io {
         path: PathBuf,

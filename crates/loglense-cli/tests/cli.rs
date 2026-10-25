@@ -393,7 +393,7 @@ fn gc_reports_and_unimplemented_suites_exit_2() {
     assert_eq!(gc["runs_removed"], 0, "fresh runs are within retention");
     let gc = project.json(&["gc", "--max-total", "0"], 0);
     assert_eq!(gc["runs_removed"], 1);
-    for verb in ["parsers", "feedback", "notify", "mcp"] {
+    for verb in ["parsers", "feedback", "notify"] {
         assert_clean_failure(&project.cmd(&[verb]), 2);
     }
 }

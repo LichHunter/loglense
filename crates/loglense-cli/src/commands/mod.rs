@@ -43,33 +43,13 @@ pub(crate) fn execute(cli: Cli) -> Result<u8, CliError> {
         Command::Parsers(_) => Err(CliError::NotImplemented("parsers")),
         Command::Feedback(_) => Err(CliError::NotImplemented("feedback")),
         Command::Notify(_) => Err(CliError::NotImplemented("notify")),
-        Command::Mcp(_) => Err(CliError::NotImplemented("mcp")),
+        Command::Mcp => {
+            loglense_mcp::serve_stdio().map_err(|err| CliError::Mcp(err.to_string()))?;
+            Ok(0)
+        }
         Command::Version => {
             println!("loglense {}", env!("CARGO_PKG_VERSION"));
             Ok(0)
         }
     }
-}
-
-/// Reads `summary.json` as loose JSON (absent while the run is live).
-/// Unparseable summaries warn and read as absent — never a hard failure.
-pub(crate) fn read_summary(run_dir: &std::path::Path) -> Option<serde_json::Value> {
-    let path = run_dir.join("summary.json");
-    let text = std::fs::read_to_string(&path).ok()?;
-    match serde_json::from_str(&text) {
-        Ok(value) => Some(value),
-        Err(err) => {
-            eprintln!(
-                "loglense: warning: ignoring unreadable {}: {err}",
-                path.display()
-            );
-            None
-        }
-    }
-}
-
-/// `(errors, warnings)` from a summary's severity counts.
-pub(crate) fn error_warning_counts(summary: &serde_json::Value) -> (u64, u64) {
-    let count = |key: &str| summary["severities"][key].as_u64().unwrap_or(0);
-    (count("error"), count("warning"))
 }

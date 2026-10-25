@@ -150,6 +150,12 @@ The callback spec is stored in run meta at spawn time.
 - **stdout carries only protocol frames** (JSON-RPC). A single stray print corrupts the stream — all warnings, tracing and diagnostics go to **stderr**.
 - A panic in a tool handler must never abort the server: failures return as tool errors; the server keeps serving.
 - Transport: stdio; eight tools, exactly the set below — no notifications, no streaming (wait_run is poll-based by design).
+- Every tool returns its result twice: as structured content and as the same JSON pretty-printed in a text block. Failures (unknown run, bad argument, corrupt run) are **tool errors** — structured content with an `error` message — never transport errors; the connection stays usable.
+- A client that closes stdin before initializing (`loglense mcp < /dev/null`) is a clean exit (code 0).
+
+### 5.1a Locating a run's store
+
+Run-scoped tools (`get_run`, `get_events`, `get_log`, `wait_run`, `kill_run`, `leave_feedback`) take `run_id` plus an **optional** `cwd`. With `cwd`, the run is looked up in that project's store. Without it, the server looks in `LOGLENSE_STATE_DIR` (when set) and in the stores it already resolved for earlier `start_run` / `list_runs` calls (bounded memory: 64 stores, 4096 runs); an unseen run yields a tool error telling the agent to pass `cwd`. `LOGLENSE_STATE_DIR`, when set in the server's environment, overrides discovery for every tool, as it does for the CLI.
 
 ### 5.2 Tools
 
@@ -163,7 +169,7 @@ The callback spec is stored in run meta at spawn time.
 | `on_complete` | string | no | — | callback command (§4) |
 | `on_complete_timeout_ms` | integer | no | 30000 | |
 
-Result: object with `run_id` (text) and `pid` (integer).
+Result: object with `run_id` (text), `pid` (integer, the wrapped child) and `run_dir`. `cwd` must be absolute and an existing directory; the command runs there.
 
 #### `list_runs`
 
@@ -173,15 +179,16 @@ Result: object with `run_id` (text) and `pid` (integer).
 | `limit` | integer | no | 50 | server clamps to ≤ 200 |
 | `cwd` | string | yes | — | explicit project dir — same trap as `start_run` |
 
-Result: rows of `run_id`, `status`, `cmd_head` (first token of the command), `age`, severity `counts`.
+Result: object with `runs` (rows of `run_id`, `status`, optional `derived`, `cmd_head` (first token of the command), `age_s`, optional `exit_code`, severity `counts` once finished), `total` and `shown` — the same rows as CLI `ls --json`.
 
 #### `get_run`
 
 | Param | Type | Required | Default |
 |---|---|---|---|
 | `run_id` | string | yes | — |
+| `cwd` | string | no | — (see §5.1a) |
 
-Result: object with `meta` (full run meta), `summary` (terminal summary, incl. callback result when present), `templates` (top deduped error templates — ≤ 20, with count, first/last seen, example).
+Result: object with `meta` (full run meta), `state` (terminal status, `running`, or derived `orphaned` / `lost`), `summary` (terminal summary without its template list, incl. callback result when present; absent while live), `templates` (top deduped error/warning templates, errors first — ≤ 20, with severity, count, first/last seen, example).
 
 #### `get_events`
 
@@ -191,20 +198,22 @@ Result: object with `meta` (full run meta), `summary` (terminal summary, incl. c
 | `severity` | enum | no | all | error / warning / notice / info / debug |
 | `kind` | enum | no | all | line / phase / summary / test |
 | `limit` | integer | no | 100 | server clamps to ≤ 1000 |
-| `offset` | integer | no | 0 | paginate past the newest |
+| `offset` | integer | no | 0 | skip this many matching events (events are in file order, oldest first) |
+| `cwd` | string | no | — | see §5.1a |
 
-Result: object with `events` (event array, §1 of `parsers.md`) and `total` (matching count, unpaginated).
+Result: object with `events` (event array, §1 of `parsers.md`; messages capped at 4096 bytes, ≤ 20 frames each), `total` (matching count, unpaginated) and `shown`.
 
 #### `get_log`
 
 | Param | Type | Required | Default | Bounds |
 |---|---|---|---|---|
 | `run_id` | string | yes | — | |
-| `stream` | enum | no | out | out / err / both |
+| `stream` | enum | no | out | out / err / both (both = arrival order, D-017) |
 | `tail_n` | integer | no | 100 | server clamps to ≤ 10000 |
-| `from_line` | integer | no | — | 1-based raw line; when set, return up to `tail_n` lines starting there instead of the last `tail_n` |
+| `from_line` | integer | no | — | 1-based raw line; when set, return up to `tail_n` lines starting there instead of the last `tail_n`; requires `out` or `err` (line numbers are per stream) |
+| `cwd` | string | no | — | see §5.1a |
 
-Result: object with `lines` (numbered text lines) and `truncated` (boolean).
+Result: object with `lines` (each `stream`, raw `line`, `text` capped at 4096 bytes) and `truncated` (boolean: lines outside the returned slice exist).
 
 #### `wait_run`
 
@@ -212,6 +221,7 @@ Result: object with `lines` (numbered text lines) and `truncated` (boolean).
 |---|---|---|---|---|
 | `run_id` | string | yes | — | |
 | `timeout_ms` | integer | no | 10000 | **hard server-side clamp 120000** |
+| `cwd` | string | no | — | see §5.1a |
 
 Result: object with `status`, `exit_code` (when exited), `timed_out`. Polls meta every 100 ms; fast-fails on orphaned/lost exactly like CLI `wait` (§3).
 
@@ -220,8 +230,9 @@ Result: object with `status`, `exit_code` (when exited), `timed_out`. Polls meta
 | Param | Type | Required | Default |
 |---|---|---|---|
 | `run_id` | string | yes | — |
+| `cwd` | string | no | — (see §5.1a) |
 
-Result: object with `run_id`, `action` (signaled / already-terminal / refused), `status`, optional `detail`. Same liveness and pid-reuse guards as CLI `kill`.
+Result: object with `run_id`, `action` (signaled / already-terminal / refused), `status`, `detail`. Same liveness and pid-reuse guards as CLI `kill`.
 
 #### `leave_feedback`
 
@@ -232,7 +243,8 @@ Result: object with `run_id`, `action` (signaled / already-terminal / refused), 
 | `detail` | string | yes | — | free text |
 | `line` | integer | no | — | raw line the feedback refers to |
 | `expected_severity` | enum | no | — | what the agent expected (e.g. a parse-miss that should have been error) |
-| `snippet` | string | no | — | quoted log fragment |
+| `snippet` | string | no | — | quoted log fragment (capped at 4096 bytes) |
+| `cwd` | string | no | — | see §5.1a |
 
 Result: object with `feedback_id`. The record lands in the project store and is mirrored to the global cross-project index (see `feedback leave`, §2.2).
 

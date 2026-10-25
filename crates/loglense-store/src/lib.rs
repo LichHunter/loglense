@@ -12,6 +12,7 @@ mod gc;
 mod interleave;
 mod listing;
 mod meta;
+pub mod query;
 
 use std::path::{Path, PathBuf};
 
@@ -25,7 +26,7 @@ pub use feedback::{
 };
 pub use gc::{gc, GcReport};
 pub use interleave::{last_segments, InterleaveWriter, Segment, INTERLEAVE_FILE};
-pub use listing::{list_runs, DerivedState, RunSummary};
+pub use listing::{list_runs, summarize_run, DerivedState, RunSummary};
 pub use meta::{
     create_run_dir, create_run_dir_at, read_meta, write_meta, Meta, OnComplete, Status, META_FILE,
     RUNS_DIR,

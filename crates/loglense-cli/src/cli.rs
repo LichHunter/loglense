@@ -42,7 +42,7 @@ pub(crate) enum Command {
         max: u64,
         /// Only runs in this state.
         #[arg(long, value_enum)]
-        status: Option<StatusFilter>,
+        status: Option<StatusArg>,
     },
     /// One run: metadata, summary and top error templates.
     Show {
@@ -102,9 +102,8 @@ pub(crate) enum Command {
     /// Completion ping adapters (not implemented yet).
     #[command(hide = true)]
     Notify(Pending),
-    /// Stdio MCP server (not implemented yet).
-    #[command(hide = true)]
-    Mcp(Pending),
+    /// Serve the MCP tools over stdio (for agent hosts; see .mcp.json).
+    Mcp,
     /// Print the version.
     #[command(hide = true)]
     Version,
@@ -142,7 +141,7 @@ pub(crate) struct Pending {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
-pub(crate) enum StatusFilter {
+pub(crate) enum StatusArg {
     Starting,
     Running,
     Exited,

@@ -1,7 +1,6 @@
 //! `show`: one run's meta, summary and top error/warning templates.
 
-use loglense_runner::check_terminal;
-use loglense_store::read_meta;
+use loglense_store::query;
 
 use crate::context::{self, Ctx};
 use crate::error::CliError;
@@ -10,52 +9,24 @@ use crate::output;
 pub(crate) fn show(ctx: &Ctx, run_id: &str, max: Option<u64>) -> Result<u8, CliError> {
     let state = ctx.reader_state()?;
     let run_dir = context::run_dir(&state, run_id)?;
-    let meta = read_meta(&run_dir).map_err(|err| CliError::CorruptRun {
-        id: run_id.to_string(),
-        reason: err.to_string(),
-    })?;
     let max = match max {
         Some(max) => usize::try_from(max).unwrap_or(usize::MAX),
         None => context::config(&state)?.output.max_templates,
     };
-    let lifecycle = check_terminal(&run_dir);
-    let mut summary = super::read_summary(&run_dir);
-    let all_templates = summary
-        .as_mut()
-        .and_then(|s| s.as_object_mut())
-        .and_then(|s| s.remove("templates"))
-        .and_then(|t| match t {
-            serde_json::Value::Array(rows) => Some(rows),
-            _ => None,
-        })
-        .unwrap_or_default();
-    let total_templates = all_templates.len();
-    let templates: Vec<serde_json::Value> = all_templates
-        .into_iter()
-        .take(max)
-        .map(|mut row| {
-            if let Some(example) = row["example"].as_str() {
-                row["example"] = output::clip(example).into();
-            }
-            row
-        })
-        .collect();
-
+    let detail = query::run_detail(&run_dir, max).map_err(|err| CliError::CorruptRun {
+        id: run_id.to_string(),
+        reason: err.to_string(),
+    })?;
     if ctx.json {
-        output::json(&serde_json::json!({
-            "meta": meta,
-            "state": output::lifecycle_name(lifecycle),
-            "summary": summary,
-            "templates": templates,
-        }));
+        output::json(&detail);
         return Ok(0);
     }
 
-    let state_label = output::lifecycle_name(lifecycle);
+    let meta = &detail.meta;
     let outcome = match (meta.exit_code, meta.signal) {
-        (Some(code), _) => format!("{state_label} {code}"),
-        (None, Some(signal)) => format!("{state_label} (signal {signal})"),
-        _ => state_label.to_string(),
+        (Some(code), _) => format!("{} {code}", detail.state),
+        (None, Some(signal)) => format!("{} (signal {signal})", detail.state),
+        _ => detail.state.to_string(),
     };
     let elapsed = meta.ended_at_ms.unwrap_or_else(context::now_ms) - meta.started_at_ms;
     println!(
@@ -63,15 +34,15 @@ pub(crate) fn show(ctx: &Ctx, run_id: &str, max: Option<u64>) -> Result<u8, CliE
         meta.run_id,
         output::duration(elapsed)
     );
-    println!("cmd:    {}", output::clip(&meta.cmd.join(" ")));
+    println!("cmd:    {}", query::clip(&meta.cmd.join(" ")));
     println!("cwd:    {}", meta.cwd.display());
     if let Some(parser) = &meta.parser {
         println!("parser: {parser}");
     }
-    let Some(summary) = summary else {
+    let Some(summary) = &detail.summary else {
         println!(
-            "summary: not available yet (run is {state_label}); see `loglense tail {}`",
-            meta.run_id
+            "summary: not available yet (run is {}); see `loglense tail {}`",
+            detail.state, meta.run_id
         );
         return Ok(0);
     };
@@ -95,15 +66,16 @@ pub(crate) fn show(ctx: &Ctx, run_id: &str, max: Option<u64>) -> Result<u8, CliE
                 .unwrap_or("unknown reason")
         );
     }
-    if templates.is_empty() {
+    if detail.templates.is_empty() {
         println!("no error or warning templates");
         return Ok(0);
     }
     println!(
-        "top error/warning templates ({} of {total_templates}):",
-        templates.len()
+        "top error/warning templates ({} of {}):",
+        detail.templates.len(),
+        detail.total_templates
     );
-    for row in &templates {
+    for row in &detail.templates {
         println!(
             "  {:>5}x {:<7} L{}-{}  {}",
             row["count"].as_u64().unwrap_or(0),

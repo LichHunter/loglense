@@ -19,7 +19,7 @@ pub(crate) fn kill(ctx: &Ctx, run_id: &str) -> Result<u8, CliError> {
         output::json(&serde_json::json!({
             "run_id": run_id,
             "action": action,
-            "status": output::lifecycle_name(outcome.lifecycle),
+            "status": outcome.lifecycle.as_str(),
             "detail": outcome.detail,
         }));
     } else {

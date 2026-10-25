@@ -40,6 +40,20 @@ pub enum Lifecycle {
     Corrupt,
 }
 
+impl Lifecycle {
+    /// Wire name: the terminal status, `running`, or the derived
+    /// `orphaned` / `lost` / `corrupt`.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Lifecycle::Running => "running",
+            Lifecycle::Terminal(status) => status.as_str(),
+            Lifecycle::Orphaned => "orphaned",
+            Lifecycle::Lost => "lost",
+            Lifecycle::Corrupt => "corrupt",
+        }
+    }
+}
+
 /// Fast-fail hook used by `wait`: returns immediately with the terminal or
 /// derived state instead of polling to a timeout.
 pub fn check_terminal(run_dir: &Path) -> Lifecycle {
@@ -160,7 +174,7 @@ pub fn kill_run(run_dir: &Path) -> KillOutcome {
     match lifecycle {
         Lifecycle::Terminal(status) => outcome(
             KillAction::AlreadyTerminal,
-            format!("run already completed ({})", status_name(status)),
+            format!("run already completed ({})", status.as_str()),
         ),
         Lifecycle::Corrupt => outcome(
             KillAction::Refused,
@@ -227,16 +241,6 @@ pub fn kill_run(run_dir: &Path) -> KillOutcome {
                 ),
             )
         }
-    }
-}
-
-fn status_name(status: Status) -> &'static str {
-    match status {
-        Status::Starting => "starting",
-        Status::Running => "running",
-        Status::Exited => "exited",
-        Status::Signaled => "signaled",
-        Status::FailedToStart => "failed-to-start",
     }
 }
 

@@ -23,6 +23,28 @@ pub enum Status {
     FailedToStart,
 }
 
+impl Status {
+    /// Wire name (`starting`, `running`, `exited`, `signaled`,
+    /// `failed-to-start`), identical to the serialized form.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Status::Starting => "starting",
+            Status::Running => "running",
+            Status::Exited => "exited",
+            Status::Signaled => "signaled",
+            Status::FailedToStart => "failed-to-start",
+        }
+    }
+
+    /// Whether the run reached a final state.
+    pub fn is_terminal(self) -> bool {
+        matches!(
+            self,
+            Status::Exited | Status::Signaled | Status::FailedToStart
+        )
+    }
+}
+
 /// Completion-callback request stored in meta (D-011).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]

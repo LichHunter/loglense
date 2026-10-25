@@ -26,7 +26,7 @@ pub(crate) fn wait(ctx: &Ctx, run_id: &str, timeout: Option<f64>) -> Result<u8, 
     let state = ctx.reader_state()?;
     let run_dir = context::run_dir(&state, run_id)?;
     let outcome = wait_run(&run_dir, timeout, POLL);
-    let status = output::lifecycle_name(outcome.lifecycle);
+    let status = outcome.lifecycle.as_str();
     let code = match outcome.lifecycle {
         _ if outcome.timed_out => EXIT_TIMEOUT,
         Lifecycle::Terminal(Status::Exited) if outcome.exit_code == Some(0) => 0,

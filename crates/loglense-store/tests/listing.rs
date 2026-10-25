@@ -94,11 +94,38 @@ fn lists_runs_newest_first() {
     assert_eq!(starts, vec![3000, 2000, 1000]);
 }
 
+/// A live stand-in supervisor whose argv names the run directory, like the
+/// real `loglense __supervisor <run-dir>`. A compound script keeps `sh`
+/// alive (no exec into sleep); its own process group plus null stdio let
+/// [`reap_group`] remove it and its sleep without holding harness pipes.
+fn fake_supervisor(run_dir: &Path) -> std::process::Child {
+    use std::os::unix::process::CommandExt as _;
+    use std::process::Stdio;
+    std::process::Command::new("sh")
+        .args(["-c", "sleep 300; :", "__supervisor"])
+        .arg(run_dir)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .process_group(0)
+        .spawn()
+        .expect("spawn fake supervisor")
+}
+
+fn reap_group(mut leader: std::process::Child) {
+    let _ = std::process::Command::new("kill")
+        .args(["-KILL", "--", &format!("-{}", leader.id())])
+        .status();
+    let _ = leader.wait();
+}
+
 #[test]
 fn running_with_live_supervisor_has_no_derived_state() {
     let state = state();
+    let run_dir = state.path().join("runs").join("20260101-AAAAAA");
+    let supervisor = fake_supervisor(&run_dir);
     let mut meta = meta_fixture("20260101-AAAAAA", Status::Running, 1000);
-    meta.supervisor_pid = std::process::id();
+    meta.supervisor_pid = supervisor.id();
     make_run(state.path(), "20260101-AAAAAA", &meta);
 
     let runs = list_runs(state.path());
@@ -107,6 +134,20 @@ fn running_with_live_supervisor_has_no_derived_state() {
     assert_eq!(runs[0].status, Some(Status::Running));
     assert_eq!(runs[0].derived, None);
     assert_eq!(runs[0].cmd_head, "cargo");
+    reap_group(supervisor);
+}
+
+#[test]
+fn live_pid_that_is_not_this_runs_supervisor_is_not_trusted() {
+    // pid reuse: the recorded supervisor pid now belongs to an unrelated
+    // process (this test binary), so the run is classified dead.
+    let state = state();
+    let meta = meta_fixture("20260101-AAAAAA", Status::Running, 1000);
+    make_run(state.path(), "20260101-AAAAAA", &meta);
+
+    let runs = list_runs(state.path());
+
+    assert_eq!(runs[0].derived, Some(DerivedState::Lost));
 }
 
 #[test]

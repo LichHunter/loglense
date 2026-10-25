@@ -46,7 +46,7 @@ pub fn list_runs(state: &Path) -> Vec<RunSummary> {
     let mut summaries: Vec<RunSummary> = entries
         .flatten()
         .filter(|entry| entry.file_type().is_ok_and(|t| t.is_dir()))
-        .map(|entry| summarize(&entry.path()))
+        .map(|entry| summarize_run(&entry.path()))
         .collect();
     summaries.sort_by(|a, b| {
         b.started_at_ms
@@ -58,7 +58,7 @@ pub fn list_runs(state: &Path) -> Vec<RunSummary> {
 
 /// Builds one row; a corrupt or missing meta yields a placeholder row named
 /// after the directory.
-fn summarize(run_dir: &Path) -> RunSummary {
+pub fn summarize_run(run_dir: &Path) -> RunSummary {
     let dir_name = run_dir
         .file_name()
         .map(|n| n.to_string_lossy().into_owned())
@@ -90,11 +90,15 @@ fn summarize(run_dir: &Path) -> RunSummary {
     }
 }
 
-/// Derived liveness (docs/architecture.md §4.1): a persisted `running`
-/// whose supervisor died splits into orphaned (child still ours, starttime
-/// verified) or lost (child gone or pid reused). Never persisted.
+/// Derived liveness (docs/architecture.md §4.1): a persisted `starting` /
+/// `running` whose supervisor died splits into orphaned (child still ours,
+/// starttime verified) or lost (child gone or pid reused). Never persisted.
 fn derived_state(meta: &crate::Meta) -> Option<DerivedState> {
-    if meta.status != crate::Status::Running || proc_alive(meta.supervisor_pid) {
+    let live_status = matches!(
+        meta.status,
+        crate::Status::Starting | crate::Status::Running
+    );
+    if !live_status || supervisor_alive(meta) {
         return None;
     }
     let child_is_ours = meta.child_pid.is_some_and(|pid| {
@@ -104,6 +108,21 @@ fn derived_state(meta: &crate::Meta) -> Option<DerivedState> {
         DerivedState::Orphaned
     } else {
         DerivedState::Lost
+    })
+}
+
+/// Supervisor alive AND still this run's supervisor: it is exec'd with the
+/// run directory in its argv, so a recycled pid never makes a dead run look
+/// live (same guard as the runner's kill/wait paths).
+fn supervisor_alive(meta: &crate::Meta) -> bool {
+    if meta.supervisor_pid == 0 || !proc_alive(meta.supervisor_pid) {
+        return false;
+    }
+    let run_id = meta.run_id.to_string();
+    std::fs::read(format!("/proc/{}/cmdline", meta.supervisor_pid)).is_ok_and(|cmdline| {
+        cmdline
+            .split(|b| *b == 0)
+            .any(|arg| arg.ends_with(run_id.as_bytes()))
     })
 }
 
