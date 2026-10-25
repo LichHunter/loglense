@@ -107,10 +107,10 @@ Per `architecture.md` §7 (D-011): push beats poll — the supervisor itself pin
 
 | Surface | How |
 |---|---|
-| CLI | `--on-complete <cmd>` on `run` (and the prefix form), optional `--on-complete-timeout <ms>` (default 30000) |
+| CLI | `--on-complete <cmd>` on `run` (and the prefix form), optional `--on-complete-timeout <ms>` (default 30000; only valid together with `--on-complete`) |
 | MCP | `on_complete` and `on_complete_timeout_ms` params on `start_run` |
 
-The callback spec is stored in run meta at spawn time.
+The callback spec is stored in run meta at spawn time. The command string runs via `sh -c` in the run's working directory, in its own process group (a timeout kills the whole group).
 
 ### 4.2 Execution semantics
 
@@ -120,7 +120,7 @@ The callback spec is stored in run meta at spawn time.
 | Ordering | run finalization **always precedes** the callback: `meta.json` and `summary.json` are atomically written first — a failing or hanging callback can never corrupt the run record; the callback *result* is recorded via a second atomic summary update after the callback completes |
 | Context | environment variables (table below) + the full summary JSON on the callback's standard input |
 | Execution | detached, **single attempt**, bounded by the timeout (default 30 s) |
-| Observability | captured output lands in `runs/<id>/callback.log`, bounded **≤ 64 KB**; the result — `ok` / `failed` / `timeout` — is recorded in the summary and displayed by `show` |
+| Observability | captured stdout + stderr land in `runs/<id>/callback.log`, bounded **≤ 64 KB** (the rest is drained and noted as dropped); the result is recorded in the summary as `callback` (`ok` = exit 0, `failed` = non-zero exit / signal / spawn failure, `timeout`) plus a human `callback_detail` (`exit 0`, `exit 127`, `killed after 500 ms`, …). `show` / `get_run` display both and the last ≤ 4 KB of `callback.log` (`callback_log`) |
 | Guarantee | best-effort by construction: the callback fires only when the supervisor survives to the terminal state; a lost run fires **nothing** — `wait` / `wait_run` polling is the fallback path |
 | Trust | same trust level as the wrapped command itself — the caller already controls what runs; callbacks add no new privilege |
 
@@ -137,8 +137,8 @@ The callback spec is stored in run meta at spawn time.
 
 | Adapter | Invocation | What it pings |
 |---|---|---|
-| tmux (built-in) | `notify tmux --pane <target>` (optional `--msg-fmt`) | injects a one-line completion message into a tmux pane — TUI agents living in tmux literally receive the line as input. Message fields are fixed: run id, status, exit code, error count (E), warning count (W); `--msg-fmt` may rearrange exactly these documented fields, never arbitrary interpolation |
-| exec (built-in) | `notify exec -- <cmd>` | runs any command with the full callback context (env vars + summary JSON on stdin) — harness CLIs, custom integrations |
+| tmux (built-in) | `notify tmux --pane <target>` (optional `--msg-fmt`, `--no-enter`) | types a one-line completion message into a tmux pane (literally, via `send-keys -l`) and presses Enter — TUI agents living in tmux literally receive the line as input. Default line: `loglense: run <id> <status> (exit <code>, <E> errors, <W> warnings)`. Message fields are fixed: `{id}`, `{status}`, `{exit}`, `{errors}`, `{warnings}`; `--msg-fmt` may rearrange exactly these, any other `{…}` is rejected (the callback then records `failed`), and control characters are replaced so the message is always one line. Outside a callback (no `LOGLENSE_RUN_ID`) it exits 2 with an explanation |
+| exec (built-in) | `notify exec -- <cmd>` | runs any command with the full callback context (env vars + summary JSON on stdin) inherited unchanged and exits with its code — harness CLIs, custom integrations |
 | webhook (recipe, not built-in) | an exec callback invoking `curl` | POSTs the summary JSON (read from the callback's stdin) to a URL with a ~10 s limit. Kept a documented recipe so the static binary's dependency list stays frozen — no HTTP client ships in the binary |
 
 ---

@@ -463,3 +463,220 @@ fn large_output_keeps_supervisor_rss_bounded() {
     eprintln!("supervisor peak RSS (VmHWM): {peak_kb} kB for {raw} raw bytes");
     assert!(peak_kb < 150 * 1024, "peak RSS {peak_kb} kB");
 }
+
+// ------------------------------------------------------------- callbacks
+
+fn with_callback(cmd: &[&str], callback: &str, timeout_ms: u64, cwd: &Path) -> SpawnRequest {
+    let mut req = request(cmd, cwd);
+    req.on_complete = Some(loglense_store::OnComplete {
+        command: callback.to_string(),
+        timeout_ms,
+    });
+    req
+}
+
+/// Polls summary.json until the callback result is recorded.
+fn callback_result(run_dir: &Path) -> serde_json::Value {
+    let mut last = serde_json::Value::Null;
+    until(Duration::from_secs(15), || {
+        last = std::fs::read_to_string(run_dir.join("summary.json"))
+            .ok()
+            .and_then(|t| serde_json::from_str(&t).ok())
+            .unwrap_or_default();
+        last.get("callback").is_some()
+    });
+    last
+}
+
+#[test]
+fn callback_fires_after_finalization_with_env_and_summary_on_stdin() {
+    let (tmp, state) = state();
+    let out = tmp.path().join("cb");
+    std::fs::create_dir(&out).unwrap();
+    // The callback checks the run is already final when it starts, then
+    // records its stdin and environment.
+    let callback = format!(
+        "grep -q '\"status\":\"exited\"' \"$LOGLENSE_STORE_PATH/runs/$LOGLENSE_RUN_ID/meta.json\" && touch {o}/meta-was-final; \
+         cat > {o}/stdin.json; env | grep '^LOGLENSE_' | sort > {o}/env.txt; echo callback-said-hi",
+        o = out.display()
+    );
+    let run = spawn_run(
+        &state,
+        with_callback(
+            &["sh", "-c", "echo 'ERROR boom'; exit 3"],
+            &callback,
+            10_000,
+            &state,
+        ),
+    )
+    .expect("starts");
+    let summary = callback_result(&run.run_dir);
+    assert_eq!(summary["callback"], "ok", "{summary}");
+    assert_eq!(summary["callback_detail"], "exit 0");
+    assert!(
+        out.join("meta-was-final").exists(),
+        "finalize precedes callback"
+    );
+    let stdin: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(out.join("stdin.json")).unwrap()).unwrap();
+    assert_eq!(stdin["exit_code"], 3);
+    assert_eq!(stdin["severities"]["error"], 1);
+    assert!(
+        stdin.get("callback").is_none(),
+        "stdin is the pre-callback summary"
+    );
+    let env = std::fs::read_to_string(out.join("env.txt")).unwrap();
+    assert!(
+        env.contains(&format!("LOGLENSE_RUN_ID={}", run.run_id)),
+        "{env}"
+    );
+    assert!(env.contains("LOGLENSE_STATUS=exited"), "{env}");
+    assert!(env.contains("LOGLENSE_EXIT_CODE=3"), "{env}");
+    assert!(env.contains("LOGLENSE_STORE_PATH="), "{env}");
+    let log = std::fs::read_to_string(run.run_dir.join(loglense_runner::CALLBACK_LOG)).unwrap();
+    assert_eq!(log, "callback-said-hi\n");
+    // The run's own outcome is untouched by the callback.
+    assert_eq!(read_meta(&run.run_dir).unwrap().exit_code, Some(3));
+}
+
+#[test]
+fn failing_and_missing_callbacks_record_failed() {
+    let (_tmp, state) = state();
+    for (callback, detail) in [("exit 7", "exit 7"), ("/nonexistent/notify-me", "exit 127")] {
+        let run = spawn_run(&state, with_callback(&["true"], callback, 10_000, &state)).unwrap();
+        let summary = callback_result(&run.run_dir);
+        assert_eq!(summary["callback"], "failed", "{callback}: {summary}");
+        assert_eq!(summary["callback_detail"], detail);
+        assert_eq!(summary["status"], "exited");
+    }
+}
+
+#[test]
+fn hanging_callback_is_killed_at_its_timeout() {
+    let (_tmp, state) = state();
+    let begun = Instant::now();
+    let run = spawn_run(&state, with_callback(&["true"], "sleep 60", 500, &state)).unwrap();
+    let summary = callback_result(&run.run_dir);
+    assert!(
+        begun.elapsed() < Duration::from_secs(5),
+        "{:?}",
+        begun.elapsed()
+    );
+    assert_eq!(summary["callback"], "timeout");
+    assert_eq!(summary["callback_detail"], "killed after 500 ms");
+    assert!(
+        until(Duration::from_secs(2), || !alive(run.supervisor_pid)),
+        "supervisor exits after the callback"
+    );
+}
+
+#[test]
+fn callback_output_is_bounded() {
+    let (_tmp, state) = state();
+    let run = spawn_run(
+        &state,
+        with_callback(
+            &["true"],
+            "head -c 200000 /dev/zero | tr '\\0' x",
+            10_000,
+            &state,
+        ),
+    )
+    .unwrap();
+    assert_eq!(callback_result(&run.run_dir)["callback"], "ok");
+    let log = std::fs::read(run.run_dir.join(loglense_runner::CALLBACK_LOG)).unwrap();
+    assert!(log.len() < 64 * 1024 + 200, "{} bytes", log.len());
+    assert!(String::from_utf8_lossy(&log).contains("more bytes of callback output dropped"));
+}
+
+#[test]
+fn failed_to_start_runs_fire_the_callback_without_blocking_the_caller() {
+    let (tmp, state) = state();
+    let marker = tmp.path().join("fired");
+    let callback = format!("echo \"$LOGLENSE_STATUS\" > {}; sleep 1", marker.display());
+    let begun = Instant::now();
+    let err = spawn_run(
+        &state,
+        with_callback(&["/nonexistent/loglense-cmd"], &callback, 10_000, &state),
+    )
+    .expect_err("cannot start");
+    assert!(matches!(err, RunnerError::StartFailed { .. }), "{err}");
+    assert!(
+        begun.elapsed() < Duration::from_millis(900),
+        "caller not blocked by the callback: {:?}",
+        begun.elapsed()
+    );
+    assert!(until(Duration::from_secs(5), || marker.exists()));
+    assert_eq!(
+        std::fs::read_to_string(&marker).unwrap().trim(),
+        "failed-to-start"
+    );
+    let run_dir = std::fs::read_dir(state.join("runs"))
+        .unwrap()
+        .flatten()
+        .next()
+        .unwrap()
+        .path();
+    let summary = callback_result(&run_dir);
+    assert_eq!(summary["status"], "failed-to-start");
+    assert_eq!(summary["callback"], "ok");
+}
+
+#[test]
+fn killed_supervisor_fires_no_callback() {
+    let (tmp, state) = state();
+    let marker = tmp.path().join("fired");
+    let run = spawn_run(
+        &state,
+        with_callback(
+            &["sleep", "300"],
+            &format!("touch {}", marker.display()),
+            10_000,
+            &state,
+        ),
+    )
+    .unwrap();
+    signal(run.supervisor_pid, libc::SIGKILL);
+    assert!(until(Duration::from_secs(2), || !alive(run.supervisor_pid)));
+    signal(run.child_pid, libc::SIGKILL);
+    std::thread::sleep(Duration::from_millis(500));
+    assert!(
+        !marker.exists(),
+        "lost runs fire nothing (best-effort by construction)"
+    );
+    assert_eq!(check_terminal(&run.run_dir), Lifecycle::Lost);
+}
+
+#[test]
+fn project_packs_and_config_apply_inside_the_supervisor() {
+    let (_tmp, state) = state();
+    std::fs::create_dir_all(state.join("formats.d")).unwrap();
+    std::fs::write(
+        state.join("formats.d/mytool.toml"),
+        "schema = 1\nname = \"mytool\"\n\n[[rule]]\nid = \"err\"\nseverity = \"error\"\npattern = '^\\[ERR\\] (.+)$'\nmessage = \"$1\"\nkind = \"line\"\n",
+    )
+    .unwrap();
+    std::fs::write(state.join("config.toml"), "[output]\nmax_templates = 1\n").unwrap();
+    let mut req = request(
+        &[
+            "sh",
+            "-c",
+            "echo '[ERR] disk full'; echo 'ERROR other'; echo 'warning: w'",
+        ],
+        &state,
+    );
+    req.parser = Some("mytool".to_string());
+    let run = spawn_run(&state, req).expect("project pack is a valid parser");
+    finish(&run);
+    let (events, _) = read_events(&run.run_dir.join("events.jsonl")).unwrap();
+    assert_eq!(
+        events[0].message, "disk full",
+        "pack rule applied by the supervisor"
+    );
+    let summary = summary(&run.run_dir);
+    assert_eq!(
+        summary["templates"].as_array().unwrap().len(),
+        1,
+        "project config.toml max_templates applied"
+    );
+}

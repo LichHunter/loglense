@@ -66,6 +66,26 @@ pub(crate) fn show(ctx: &Ctx, run_id: &str, max: Option<u64>) -> Result<u8, CliE
                 .unwrap_or("unknown reason")
         );
     }
+    if let Some(result) = summary["callback"].as_str() {
+        println!(
+            "callback: {result} ({})",
+            summary["callback_detail"].as_str().unwrap_or("")
+        );
+        if let Some(log) = detail.callback_log.as_deref().filter(|l| !l.is_empty()) {
+            for line in log
+                .lines()
+                .rev()
+                .take(10)
+                .collect::<Vec<_>>()
+                .into_iter()
+                .rev()
+            {
+                println!("  | {line}");
+            }
+        }
+    } else if meta.on_complete.is_some() {
+        println!("callback: pending");
+    }
     if detail.templates.is_empty() {
         println!("no error or warning templates");
         return Ok(0);

@@ -14,7 +14,7 @@ const GLOBAL_VALUE_FLAGS: [&str; 1] = ["--dir"];
 /// Global boolean flags.
 const GLOBAL_BOOL_FLAGS: [&str; 1] = ["--json"];
 /// `run` flags taking a value that the prefix form also accepts.
-const RUN_VALUE_FLAGS: [&str; 1] = ["--parser"];
+const RUN_VALUE_FLAGS: [&str; 3] = ["--parser", "--on-complete", "--on-complete-timeout"];
 
 /// Rewrites `argv` for the prefix form; anything else passes through
 /// unchanged for clap to parse (or reject).

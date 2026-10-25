@@ -26,14 +26,16 @@ const AUTO: &str = "auto";
 /// parses both streams, then writes the summary and the terminal meta
 /// atomically, in that order.
 ///
-/// The completion-callback hook (T16, D-011) fires here — after this
-/// function's atomic finalization — never before it.
+/// The completion callback (D-011) fires last — strictly after the summary
+/// and terminal meta are written — for every terminal state, including a
+/// command that failed to start.
 pub fn supervisor_main(run_dir: &Path) -> Result<(), RunnerError> {
     let mut meta = read_meta(run_dir)?;
-    let Some(state) = run_dir.parent() else {
+    // run_dir = <state>/runs/<id>: the store root is two levels up.
+    let Some(state) = run_dir.parent().and_then(Path::parent) else {
         return Err(RunnerError::InvalidRunDir {
             run_dir: run_dir.to_path_buf(),
-            reason: "run directory has no parent state directory",
+            reason: "run directory is not inside a <state>/runs/ directory",
         });
     };
     sys::trap_stop_signals().map_err(|source| RunnerError::Io {
@@ -41,7 +43,7 @@ pub fn supervisor_main(run_dir: &Path) -> Result<(), RunnerError> {
         source,
     })?;
 
-    let mut child = Command::new(meta.cmd.first().cloned().unwrap_or_default())
+    let spawned = Command::new(meta.cmd.first().cloned().unwrap_or_default())
         .args(&meta.cmd[1..])
         .current_dir(&meta.cwd)
         .env("LOGLENSE_RUN", "1")
@@ -49,12 +51,17 @@ pub fn supervisor_main(run_dir: &Path) -> Result<(), RunnerError> {
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .process_group(0)
-        .spawn()
-        .map_err(|source| RunnerError::SpawnFailed {
-            cmd: meta.cmd.first().cloned().unwrap_or_default(),
-            source,
-        })
-        .inspect_err(|_| mark_failed_to_start(run_dir, &meta))?;
+        .spawn();
+    let mut child = match spawned {
+        Ok(child) => child,
+        Err(source) => {
+            fail_to_start(run_dir, state, &meta);
+            return Err(RunnerError::SpawnFailed {
+                cmd: meta.cmd.first().cloned().unwrap_or_default(),
+                source,
+            });
+        }
+    };
     meta.supervisor_pid = std::process::id();
     meta.child_pid = Some(child.id());
     meta.child_starttime = proc_starttime(child.id());
@@ -101,27 +108,49 @@ pub fn supervisor_main(run_dir: &Path) -> Result<(), RunnerError> {
         templates,
         truncated: capture.truncated.is_some(),
         truncated_reason: capture.truncated,
+        callback: None,
+        callback_detail: None,
     };
     // Summary before the terminal meta: any reader that observes a
     // terminal status is guaranteed to find summary.json.
     write_summary(run_dir, &summary)?;
     write_meta(run_dir, &meta)?;
-    // TODO(T16): fire the on_complete callback here — strictly after the
-    // atomic meta + summary finalization above (docs/architecture.md §7).
-    Ok(())
+    run_callback(run_dir, state, &meta, summary)
 }
 
-/// Persists `failed-to-start` for a spawn failure (idempotent, best-effort:
-/// the caller's `SpawnFailed` error is the primary diagnostic).
-fn mark_failed_to_start(run_dir: &Path, meta: &Meta) {
+/// Finalizes a command that could not be spawned: summary, then
+/// `failed-to-start` meta, then the callback (best-effort throughout: the
+/// caller's `SpawnFailed` error is the primary diagnostic).
+fn fail_to_start(run_dir: &Path, state: &Path, meta: &Meta) {
     let mut meta = meta.clone();
-    if meta.status == Status::FailedToStart {
-        return;
-    }
+    let ended_at = crate::pump::now_ms();
     meta.status = Status::FailedToStart;
     meta.supervisor_pid = std::process::id();
-    meta.ended_at_ms = Some(crate::pump::now_ms());
-    let _ = write_meta(run_dir, &meta);
+    meta.ended_at_ms = Some(ended_at);
+    let summary = Summary::failed_to_start(ended_at - meta.started_at_ms);
+    if write_summary(run_dir, &summary).is_err() || write_meta(run_dir, &meta).is_err() {
+        return;
+    }
+    let _ = run_callback(run_dir, state, &meta, summary);
+}
+
+/// Fires the run's completion callback, if one was requested, then records
+/// its result with a second atomic summary write. Never touches meta: the
+/// run's outcome is final before the callback starts.
+fn run_callback(
+    run_dir: &Path,
+    state: &Path,
+    meta: &Meta,
+    mut summary: Summary,
+) -> Result<(), RunnerError> {
+    let Some(spec) = &meta.on_complete else {
+        return Ok(());
+    };
+    let stdin = serde_json::to_vec(&summary).unwrap_or_default();
+    let outcome = crate::callback::fire(run_dir, state, meta, spec, &stdin);
+    summary.callback = Some(outcome.result.to_string());
+    summary.callback_detail = Some(outcome.detail);
+    write_summary(run_dir, &summary)
 }
 
 /// Maps a child exit status onto the persisted status fields. `(None,

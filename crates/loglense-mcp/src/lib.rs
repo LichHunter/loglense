@@ -39,6 +39,8 @@ const WAIT_DEFAULT_MS: u64 = 10_000;
 const WAIT_MAX_MS: u64 = 120_000;
 /// `wait_run` meta poll cadence.
 const WAIT_POLL: Duration = Duration::from_millis(100);
+/// Default completion-callback timeout.
+const CALLBACK_TIMEOUT_MS: u64 = 30_000;
 /// Templates returned by `get_run`.
 const RUN_TEMPLATES: usize = 20;
 
@@ -99,6 +101,10 @@ impl LoglenseServer {
             let mut request = SpawnRequest::new(args.cmd, PathBuf::from(&args.cwd));
             request.parser = args.parser;
             request.supervisor_exe = supervisor_exe;
+            request.on_complete = args.on_complete.map(|command| loglense_store::OnComplete {
+                command,
+                timeout_ms: args.on_complete_timeout_ms.unwrap_or(CALLBACK_TIMEOUT_MS),
+            });
             let started = spawn_run(&state, request).map_err(|e| e.to_string())?;
             known.remember_run(started.run_id.as_str(), &state);
             Ok(json!({

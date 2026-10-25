@@ -99,9 +99,9 @@ pub(crate) enum Command {
     /// Agent feedback: record parser problems, triage, promote to fixtures.
     #[command(subcommand)]
     Feedback(FeedbackCmd),
-    /// Completion ping adapters (not implemented yet).
-    #[command(hide = true)]
-    Notify(Pending),
+    /// Ping adapters to use as an --on-complete callback target.
+    #[command(subcommand)]
+    Notify(NotifyCmd),
     /// Serve the MCP tools over stdio (for agent hosts; see .mcp.json).
     Mcp,
     /// Print the version.
@@ -114,6 +114,18 @@ pub(crate) struct RunArgs {
     /// Parser module for this run (default: config, auto-detect).
     #[arg(long)]
     pub parser: Option<String>,
+    /// Command the supervisor runs (via `sh -c`) when the run finishes:
+    /// context in LOGLENSE_* env vars, summary JSON on stdin.
+    #[arg(long, value_name = "CMD")]
+    pub on_complete: Option<String>,
+    /// Kill the callback after this many milliseconds.
+    #[arg(
+        long,
+        value_name = "MS",
+        default_value_t = 30_000,
+        requires = "on_complete"
+    )]
+    pub on_complete_timeout: u64,
     /// The command to run.
     #[arg(
         required = true,
@@ -268,11 +280,33 @@ pub(crate) enum PromoteStream {
     Err,
 }
 
-/// Placeholder argument sink for subcommands later tasks implement.
-#[derive(Debug, Args)]
-pub(crate) struct Pending {
-    #[arg(trailing_var_arg = true, allow_hyphen_values = true, hide = true)]
-    pub rest: Vec<String>,
+#[derive(Debug, Subcommand)]
+pub(crate) enum NotifyCmd {
+    /// Type a one-line completion message into a tmux pane (and press
+    /// Enter), e.g. `--on-complete 'loglense notify tmux --pane %3'`.
+    Tmux {
+        /// Target pane (`%3`, `session:window.pane`, …).
+        #[arg(long)]
+        pane: String,
+        /// Message layout; only {id} {status} {exit} {errors} {warnings}.
+        #[arg(long, value_name = "FMT")]
+        msg_fmt: Option<String>,
+        /// Type the message without pressing Enter.
+        #[arg(long)]
+        no_enter: bool,
+    },
+    /// Run any command with the callback context (env vars + summary JSON
+    /// on stdin); exits with the command's code.
+    Exec {
+        /// The command to run.
+        #[arg(
+            required = true,
+            trailing_var_arg = true,
+            allow_hyphen_values = true,
+            value_name = "CMD"
+        )]
+        cmd: Vec<String>,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]

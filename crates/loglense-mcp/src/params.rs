@@ -15,6 +15,13 @@ pub struct StartRunArgs {
     pub cwd: String,
     /// Parser module (e.g. "cargo", "pytest", "maven"); omit to autodetect.
     pub parser: Option<String>,
+    /// Command (run via `sh -c`) fired when the run finishes — e.g.
+    /// `loglense notify tmux --pane %3` to ping your terminal. Gets
+    /// LOGLENSE_RUN_ID / LOGLENSE_STATUS / LOGLENSE_EXIT_CODE /
+    /// LOGLENSE_STORE_PATH and the summary JSON on stdin.
+    pub on_complete: Option<String>,
+    /// Callback timeout (default 30000 ms).
+    pub on_complete_timeout_ms: Option<u64>,
 }
 
 #[derive(Debug, Deserialize, JsonSchema)]

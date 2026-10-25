@@ -7,6 +7,7 @@ mod gc;
 mod init;
 mod kill;
 mod ls;
+mod notify;
 mod parsers;
 mod run;
 mod show;
@@ -44,7 +45,7 @@ pub(crate) fn execute(cli: Cli) -> Result<u8, CliError> {
         Command::Gc { max_age, max_total } => gc::gc(&ctx, max_age, max_total),
         Command::Parsers(cmd) => parsers::parsers(&ctx, cmd),
         Command::Feedback(cmd) => feedback::feedback(&ctx, cmd),
-        Command::Notify(_) => Err(CliError::NotImplemented("notify")),
+        Command::Notify(cmd) => notify::notify(cmd),
         Command::Mcp => {
             loglense_mcp::serve_stdio().map_err(|err| CliError::Mcp(err.to_string()))?;
             Ok(0)

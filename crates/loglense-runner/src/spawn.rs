@@ -18,7 +18,7 @@ use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
 
 use loglense_core::RunId;
-use loglense_store::{create_run_dir, read_meta, write_meta, Meta, Status};
+use loglense_store::{create_run_dir, read_meta, write_meta, Meta, OnComplete, Status};
 
 use crate::supervisor::{build_registry, load_config};
 use crate::{sys, RunnerError};
@@ -44,6 +44,9 @@ pub struct SpawnRequest {
     /// (defaults to the current executable; tests point it at
     /// `loglense-runner-supervisor`).
     pub supervisor_exe: Option<PathBuf>,
+    /// Completion callback fired by the supervisor at the terminal state
+    /// (D-011), stored in meta.
+    pub on_complete: Option<OnComplete>,
 }
 
 impl SpawnRequest {
@@ -55,6 +58,7 @@ impl SpawnRequest {
             cwd,
             parser: None,
             supervisor_exe: None,
+            on_complete: None,
         }
     }
 }
@@ -101,7 +105,7 @@ pub fn spawn_run(state: &Path, req: SpawnRequest) -> Result<SpawnOutcome, Runner
         ended_at_ms: None,
         tool_version: env!("CARGO_PKG_VERSION").to_string(),
         schema_version: 1,
-        on_complete: None,
+        on_complete: req.on_complete.clone(),
     };
     write_meta(&run_dir, &meta)?;
     let exe = match req.supervisor_exe.clone() {
@@ -127,20 +131,21 @@ pub fn spawn_run(state: &Path, req: SpawnRequest) -> Result<SpawnOutcome, Runner
             source,
         }
     })?;
-    match wait_for_ack(&mut supervisor, &run_dir, &run_id) {
-        Ok(child_pid) => {
-            let supervisor_pid = supervisor.id();
-            // Detached reaper: a long-lived parent never zombies supervisors.
-            std::thread::spawn(move || {
-                let _ = supervisor.wait();
-            });
-            Ok(SpawnOutcome {
-                run_id,
-                run_dir,
-                supervisor_pid,
-                child_pid,
-            })
-        }
+    let acked = wait_for_ack(&mut supervisor, &run_dir, &run_id);
+    let supervisor_pid = supervisor.id();
+    // Detached reaper on every path: a long-lived parent never zombies
+    // supervisors, and a failed start returns at once even while the
+    // supervisor still runs the failed-to-start callback.
+    std::thread::spawn(move || {
+        let _ = supervisor.wait();
+    });
+    match acked {
+        Ok(child_pid) => Ok(SpawnOutcome {
+            run_id,
+            run_dir,
+            supervisor_pid,
+            child_pid,
+        }),
         Err(err) => Err(err),
     }
 }
@@ -218,7 +223,6 @@ fn wait_for_ack(
                     }
                 }
                 Status::FailedToStart => {
-                    let _ = supervisor.wait();
                     return Err(RunnerError::StartFailed {
                         run_id: run_id.to_string(),
                         reason: "command failed to spawn".to_string(),

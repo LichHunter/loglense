@@ -51,6 +51,33 @@ pub struct Summary {
     pub truncated: bool,
     /// Why capture was truncated, when it was.
     pub truncated_reason: Option<String>,
+    /// Completion-callback result (`ok` / `failed` / `timeout`), recorded
+    /// by a second atomic write after the callback finished (D-011).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub callback: Option<String>,
+    /// Exit code, signal, spawn error, or timeout of the callback.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub callback_detail: Option<String>,
+}
+
+impl Summary {
+    /// The summary of a run whose command never started.
+    pub(crate) fn failed_to_start(duration_ms: i64) -> Self {
+        Summary {
+            status: Status::FailedToStart,
+            exit_code: None,
+            signal: None,
+            duration_ms,
+            events: 0,
+            severities: BTreeMap::new(),
+            tests: BTreeMap::new(),
+            templates: Vec::new(),
+            truncated: false,
+            truncated_reason: None,
+            callback: None,
+            callback_detail: None,
+        }
+    }
 }
 
 /// Writes `summary` to `run_dir/summary.json` atomically.
@@ -116,6 +143,8 @@ mod tests {
             }],
             truncated: false,
             truncated_reason: None,
+            callback: None,
+            callback_detail: None,
         }
     }
 

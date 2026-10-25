@@ -208,6 +208,27 @@ pub struct RunDetail {
     /// Templates the summary holds before the cap.
     #[serde(skip)]
     pub total_templates: usize,
+    /// Last ≤ 4 KB of `callback.log` when a completion callback ran.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub callback_log: Option<String>,
+}
+
+/// Last [`MAX_TEXT`] bytes of `run_dir/callback.log` (cut on a char
+/// boundary), when the file exists.
+fn callback_log_tail(run_dir: &Path) -> Option<String> {
+    use std::io::{Seek as _, SeekFrom};
+    let mut file = std::fs::File::open(run_dir.join("callback.log")).ok()?;
+    let len = file.metadata().ok()?.len();
+    let start = len.saturating_sub(MAX_TEXT as u64);
+    file.seek(SeekFrom::Start(start)).ok()?;
+    let mut bytes = Vec::new();
+    std::io::Read::read_to_end(&mut file, &mut bytes).ok()?;
+    let text = String::from_utf8_lossy(&bytes).into_owned();
+    Some(if start > 0 {
+        format!("[… {start} earlier bytes] {text}")
+    } else {
+        text
+    })
 }
 
 /// Reads one run's detail; an unreadable meta is an error (corrupt run).
@@ -241,6 +262,7 @@ pub fn run_detail(run_dir: &Path, max_templates: usize) -> Result<RunDetail, Sto
         summary,
         templates,
         total_templates,
+        callback_log: callback_log_tail(run_dir),
     })
 }
 

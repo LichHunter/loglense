@@ -299,14 +299,13 @@ fn dir_flag_overrides_discovery_for_writers_and_readers() {
 }
 
 #[test]
-fn gc_reports_and_unimplemented_suites_exit_2() {
+fn gc_reports_removed_runs() {
     let project = Project::new();
     project.finished(&["true"]);
     let gc = project.json(&["gc"], 0);
     assert_eq!(gc["runs_removed"], 0, "fresh runs are within retention");
     let gc = project.json(&["gc", "--max-total", "0"], 0);
     assert_eq!(gc["runs_removed"], 1);
-    assert_clean_failure(&project.cmd(&["notify"]), 2);
 }
 
 #[test]

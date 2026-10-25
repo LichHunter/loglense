@@ -23,9 +23,6 @@ pub(crate) enum CliError {
     /// The run exists but its records are unreadable.
     #[error("run {id} is corrupt: {reason}")]
     CorruptRun { id: String, reason: String },
-    /// The requested subcommand ships in a later task.
-    #[error("`loglense {0}` is not implemented yet")]
-    NotImplemented(&'static str),
     /// The MCP server stopped with a protocol or transport failure.
     #[error("mcp server: {0}")]
     Mcp(String),

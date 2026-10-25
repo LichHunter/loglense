@@ -418,3 +418,36 @@ fn mcp_with_closed_stdin_exits_cleanly() {
     assert_eq!(out.status.code(), Some(0));
     assert!(out.stdout.is_empty());
 }
+
+#[tokio::test(flavor = "multi_thread")]
+async fn start_run_on_complete_round_trips_through_get_run() {
+    let fixture = Fixture::new();
+    let client = fixture.client().await;
+    let marker = fixture.project.join("callback-fired");
+    let started = ok(
+        &client,
+        "start_run",
+        json!({
+            "cmd": ["sh", "-c", "exit 0"],
+            "cwd": fixture.cwd(),
+            "on_complete": format!("echo \"$LOGLENSE_STATUS\" > '{}'; echo pinged", marker.display()),
+            "on_complete_timeout_ms": 5000,
+        }),
+    )
+    .await;
+    let run_id = started["run_id"].as_str().unwrap().to_string();
+    ok(&client, "wait_run", json!({ "run_id": run_id })).await;
+    let mut run = Value::Null;
+    for _ in 0..200 {
+        run = ok(&client, "get_run", json!({ "run_id": run_id })).await;
+        if run["summary"].get("callback").is_some() {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+    }
+    assert_eq!(run["summary"]["callback"], "ok", "{run}");
+    assert_eq!(run["meta"]["on_complete"]["timeout_ms"], 5000);
+    assert_eq!(run["callback_log"], "pinged\n");
+    assert_eq!(std::fs::read_to_string(&marker).unwrap().trim(), "exited");
+    let _ = client.service.cancel().await;
+}

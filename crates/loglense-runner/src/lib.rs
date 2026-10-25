@@ -13,6 +13,7 @@
 //! caller's terminal and process group. All libc calls live in `sys`.
 
 mod ansi;
+mod callback;
 mod capture;
 mod control;
 mod pump;
@@ -22,6 +23,7 @@ mod summary;
 mod supervisor;
 mod sys;
 
+pub use callback::CALLBACK_LOG;
 pub use control::{
     check_terminal, kill_run, wait_run, KillAction, KillOutcome, Lifecycle, WaitOutcome,
     CONTROL_KILL,
