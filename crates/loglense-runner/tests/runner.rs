@@ -680,3 +680,31 @@ fn project_packs_and_config_apply_inside_the_supervisor() {
         "project config.toml max_templates applied"
     );
 }
+
+#[test]
+fn summary_test_totals_come_from_tool_totals_lines() {
+    let (_tmp, state) = state();
+    // pytest -q prints no per-test line for passes: only the totals line
+    // knows about them.
+    let mut req = request(
+        &["sh", "-c", "printf 'F.F\\nFAILED t.py::a - x\\nFAILED t.py::b - y\\n2 failed, 1 passed in 0.02s\\n'; exit 1"],
+        &state,
+    );
+    req.parser = Some("pytest".to_string());
+    let run = spawn_run(&state, req).unwrap();
+    finish(&run);
+    let tests = &summary(&run.run_dir)["tests"];
+    assert_eq!(tests["failed"], 2, "{tests}");
+    assert_eq!(tests["passed"], 1, "{tests}");
+
+    // cargo prints one `test result:` per test binary; the run sums them.
+    let script = "printf 'test result: ok. 5 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.01s\\ntest result: FAILED. 2 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\\n'";
+    let mut req = request(&["sh", "-c", script], &state);
+    req.parser = Some("cargo".to_string());
+    let run = spawn_run(&state, req).unwrap();
+    finish(&run);
+    let tests = &summary(&run.run_dir)["tests"];
+    assert_eq!(tests["passed"], 7, "{tests}");
+    assert_eq!(tests["failed"], 1, "{tests}");
+    assert_eq!(tests["ignored"], 1, "{tests}");
+}

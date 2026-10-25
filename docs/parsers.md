@@ -26,6 +26,7 @@ Every module — compiled built-in or TOML pack — produces the same normalized
 | `frames` | list of text | optional | attached stack-trace frames — one event per logical *block*, not per frame line |
 | `phase` | text | optional | named build/test phase (e.g. maven reactor module names) |
 | `test` | object | optional | `name` (text), `outcome` (e.g. passed / failed / error / skipped), `duration_ms` (number) |
+| `totals` | map of outcome → number | optional | aggregate test counts carried by a tool's totals line (pytest `2 failed, 1 passed`, cargo `test result: …`, maven's module-level `Tests run: …`); zero counts omitted. The run summary's `tests` sums these when any event carries them, else counts `kind=test` events by outcome (D-018) |
 
 ### 1.2 Enums
 

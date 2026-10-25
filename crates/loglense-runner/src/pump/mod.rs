@@ -70,7 +70,8 @@ pub(crate) struct Capture {
     pub events: u64,
     /// Events per severity wire-name.
     pub severities: BTreeMap<String, u64>,
-    /// `kind=test` events per outcome.
+    /// Test counts per outcome: summed tool totals lines when the run had
+    /// any, else `kind=test` events.
     pub tests: BTreeMap<String, u64>,
     /// Template dedup tracker (LRU-capped).
     pub templates: TemplateGroups,
@@ -139,6 +140,10 @@ pub(crate) struct Pump<'a> {
     err: Lane,
     seq: u64,
     capture: Capture,
+    /// `kind=test` events per outcome.
+    test_events: BTreeMap<String, u64>,
+    /// Sum of tool totals lines per outcome (preferred when present).
+    test_totals: BTreeMap<String, u64>,
 }
 
 impl<'a> Pump<'a> {
@@ -159,6 +164,8 @@ impl<'a> Pump<'a> {
             err,
             seq: 0,
             capture: Capture::default(),
+            test_events: BTreeMap::new(),
+            test_totals: BTreeMap::new(),
         };
         if let Selection::Named(name) = &pump.selection {
             if pump.out.chain.is_none() {
@@ -338,8 +345,11 @@ impl<'a> Pump<'a> {
                 .or_default() += 1;
             if event.kind == Kind::Test {
                 if let Some(test) = &event.test {
-                    *self.capture.tests.entry(test.outcome.clone()).or_default() += 1;
+                    *self.test_events.entry(test.outcome.clone()).or_default() += 1;
                 }
+            }
+            for (outcome, count) in &event.totals {
+                *self.test_totals.entry(outcome.clone()).or_default() += count;
             }
             if let Err(err) = self.sink.append(&event) {
                 self.stop_parsing(format!("events write failed: {err}"));
@@ -380,6 +390,13 @@ impl<'a> Pump<'a> {
         let mut capture = std::mem::take(&mut self.capture);
         capture.parser_out = self.out.detected;
         capture.parser_err = self.err.detected;
+        // A tool's own totals lines are authoritative (quiet runs print no
+        // per-test line for passes); per-test events are the fallback.
+        capture.tests = if self.test_totals.is_empty() {
+            std::mem::take(&mut self.test_events)
+        } else {
+            std::mem::take(&mut self.test_totals)
+        };
         capture
     }
 }

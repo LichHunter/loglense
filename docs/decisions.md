@@ -169,3 +169,12 @@ ADR-lite ledger: every cross-cutting choice with its why. Titles and section cro
 | Decision | Each pipe read in the supervisor takes a process-wide sequence number. The capture loop appends one record per read chunk to `runs/<id>/interleave.idx` (stream, first raw line the chunk completed, read sequence number). `tail --stream merged` reads the journal's newest records, sorts by read sequence, and rebuilds the last N lines from one bounded pass per spool (the newest N lines overall are, per stream, a suffix of at most N lines). Runs without a journal fall back to stdout's tail then stderr's. |
 | Alternatives considered | Ordering by event `seq` (rejected: emission order, shown wrong in tests); recording stream switches in channel order (rejected: channel reorders bursts); a merged spool copy (rejected: doubles disk); a pty (rejected by D-007). |
 | Consequences | Merged order is exact up to pipe-read granularity — lines one read returned stay together; writes on the two streams that land between the same pair of reads cannot be ordered by any reader of two pipes. Cost: one ~12-byte record per read chunk. Serves FR-06, NFR-05. |
+
+## D-018 — test totals travel on the event
+
+| | |
+|---|---|
+| Context | The run summary's test counts came only from `kind=test` events. Quiet runners print no per-test line for passes (`pytest -q`, a passing `cargo test`), so a real `2 failed, 1 passed` run summarized as `failed 2`, wrong exactly where agents look first. The only place the full counts exist is the tool's own totals line, and the event model had no way to carry numbers. |
+| Decision | `Event` gains an optional `totals` map (outcome → count, zeros omitted). Tool parsers fill it only on *aggregate* lines: pytest's final totals line, cargo's per-binary `test result:` line, and maven's bare module-level `Tests run:` line (per-class lines with `-- in <class>` are excluded, so summing never double-counts). The supervisor sums `totals` across the run when any event carries them; otherwise it falls back to counting `kind=test` events. |
+| Alternatives considered | Parsing totals out of summary messages in the runner (rejected: puts tool grammar in a consumer, breaking P3, the Event model as the only contract); emitting synthetic per-test events (rejected: invents tests that never printed). |
+| Consequences | Accurate totals for quiet runs. Additive schema change: older events and fixtures without `totals` still parse (§1.3 forwards compatibility). Eight golden fixtures gained the field. Serves FR-04, FR-06. |

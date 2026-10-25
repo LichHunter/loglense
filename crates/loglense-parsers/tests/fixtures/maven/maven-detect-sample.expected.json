@@ -15,7 +15,8 @@
     "severity": "info",
     "kind": "summary",
     "message": "Tests run: 3, Failures: 0, Errors: 0, Skipped: 0",
-    "lines": [2]
+    "lines": [2],
+    "totals": {"passed": 3}
   },
   {
     "seq": 3,

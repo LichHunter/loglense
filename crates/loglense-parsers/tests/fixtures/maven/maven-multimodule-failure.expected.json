@@ -92,7 +92,8 @@
     "severity": "error",
     "kind": "summary",
     "message": "Tests run: 4, Failures: 1, Errors: 1, Skipped: 0",
-    "lines": [15]
+    "lines": [15],
+    "totals": {"error": 1, "failed": 1, "passed": 2}
   },
   {
     "seq": 11,

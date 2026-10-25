@@ -128,4 +128,10 @@ pub struct Event {
     /// Test case info for [`Kind::Test`] events.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub test: Option<TestInfo>,
+    /// Aggregate test counts by outcome (`passed`, `failed`, `error`,
+    /// `skipped`, …) carried by a tool's totals line (`2 failed, 1 passed`,
+    /// `test result: …`, maven's module `Tests run:`). Zero counts are
+    /// omitted. The run summary sums these when any are present (D-018).
+    #[serde(default, skip_serializing_if = "std::collections::BTreeMap::is_empty")]
+    pub totals: std::collections::BTreeMap<String, u64>,
 }

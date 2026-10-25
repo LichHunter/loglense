@@ -125,6 +125,14 @@ fn maven_event(line: &str, ctx: &LineCtx) -> Option<Event> {
                 &caps[1], &caps[2], &caps[3], &caps[4]
             ),
             lines: vec![ctx.line_no],
+            // Per-class lines carry trailing `, Time elapsed … -- in X`;
+            // only the bare module-level line is an aggregate, so summing
+            // never double-counts.
+            totals: if line.trim_end().len() == caps[0].len() {
+                maven_totals(&caps)
+            } else {
+                std::collections::BTreeMap::new()
+            },
             ..Event::default()
         });
     }
@@ -189,4 +197,22 @@ impl ParseState for MavenState {
         events.extend(self.java.finish());
         events
     }
+}
+
+/// `Tests run: 10, Failures: 2, Errors: 1, Skipped: 1` →
+/// `{passed: 6, failed: 2, error: 1, skipped: 1}` (zeros omitted).
+fn maven_totals(caps: &regex::Captures<'_>) -> std::collections::BTreeMap<String, u64> {
+    let n = |i: usize| caps[i].parse::<u64>().unwrap_or(0);
+    let (run, failed, error, skipped) = (n(1), n(2), n(3), n(4));
+    let passed = run.saturating_sub(failed + error + skipped);
+    [
+        ("passed", passed),
+        ("failed", failed),
+        ("error", error),
+        ("skipped", skipped),
+    ]
+    .into_iter()
+    .filter(|(_, count)| *count > 0)
+    .map(|(key, count)| (key.to_string(), count))
+    .collect()
 }

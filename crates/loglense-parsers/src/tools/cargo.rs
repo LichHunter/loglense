@@ -150,6 +150,10 @@ fn cargo_event(line: &str, ctx: &LineCtx) -> Option<Event> {
             kind: Kind::Summary,
             message: line.to_string(),
             lines: vec![ctx.line_no],
+            totals: TEST_RESULT
+                .captures(line)
+                .map(|caps| result_totals(&caps[2]))
+                .unwrap_or_default(),
             ..Event::default()
         });
     }
@@ -164,4 +168,28 @@ fn cargo_event(line: &str, ctx: &LineCtx) -> Option<Event> {
         });
     }
     None
+}
+
+/// `2 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in
+/// 0.00s` → `{passed: 2, failed: 1}` (`ignored` kept; `measured` /
+/// `filtered out` are not outcomes; zeros omitted). Each test binary prints
+/// one such line, so the run summary's sum is the whole `cargo test`.
+fn result_totals(counts: &str) -> std::collections::BTreeMap<String, u64> {
+    let mut totals = std::collections::BTreeMap::new();
+    for part in counts.split("; ") {
+        let mut words = part.split(' ');
+        let (Some(count), Some(word)) = (words.next(), words.next()) else {
+            continue;
+        };
+        if !matches!(word, "passed" | "failed" | "ignored") {
+            continue;
+        }
+        match count.parse::<u64>() {
+            Ok(n) if n > 0 => {
+                totals.insert(word.to_string(), n);
+            }
+            _ => {}
+        }
+    }
+    totals
 }

@@ -462,3 +462,4 @@ Static artifacts are also buildable via cargo from the dev shell.
 | D-015 `fs4` for the two advisory locks | §5 |
 | D-016 `libc` for setsid detach, group signals, TERM/INT trap | §4.2 |
 | D-017 per-read arrival journal for merged tail | §5 |
+| D-018 test totals travel on the event | §4.3 |

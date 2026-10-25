@@ -63,6 +63,7 @@
     "kind": "summary",
     "message": "1 error in 0.01s",
     "lines": [12],
+    "totals": {"error": 1},
     "test": {
       "name": "pytest",
       "outcome": "error",

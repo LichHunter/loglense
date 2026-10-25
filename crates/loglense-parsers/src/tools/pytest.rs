@@ -238,8 +238,32 @@ fn totals_event(ctx: &LineCtx, text: &str, counts: &str, secs: &str) -> Event {
             outcome: outcome.to_string(),
             duration_ms: Some(duration_ms),
         }),
+        totals: outcome_totals(counts),
         ..Event::default()
     }
+}
+
+/// `2 failed, 1 passed, 3 warnings` → `{failed: 2, passed: 1}`: test
+/// outcomes only (`warnings` / `deselected` are not outcomes), `errors`
+/// folded into `error`, zeros omitted.
+fn outcome_totals(counts: &str) -> std::collections::BTreeMap<String, u64> {
+    let mut totals = std::collections::BTreeMap::new();
+    for token in counts.split(", ") {
+        let mut parts = token.split(' ');
+        let (Some(count), Some(word)) = (parts.next(), parts.next()) else {
+            continue;
+        };
+        let key = match word {
+            "failed" | "passed" | "skipped" | "xfailed" | "xpassed" => word,
+            "error" | "errors" => "error",
+            _ => continue,
+        };
+        match count.parse::<u64>() {
+            Ok(n) if n > 0 => *totals.entry(key.to_string()).or_default() += n,
+            _ => {}
+        }
+    }
+    totals
 }
 
 /// Sum the `failed` and `error(s)` tokens of a totals count list.

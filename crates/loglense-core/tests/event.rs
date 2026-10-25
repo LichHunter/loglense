@@ -26,6 +26,7 @@ fn full_event_serializes_with_wire_field_names() {
             outcome: "failed".into(),
             duration_ms: Some(3_150),
         }),
+        totals: [("failed".to_string(), 1)].into_iter().collect(),
     };
     let json = serde_json::to_value(&event).expect("serialize");
     assert_eq!(json["seq"], 7, "field name must be `seq`: {json}");
@@ -71,6 +72,7 @@ fn full_event_json_roundtrip_is_lossless() {
         frames: vec![],
         phase: None,
         test: None,
+        totals: Default::default(),
     };
     let json = serde_json::to_string(&event).expect("serialize");
     let back: Event = serde_json::from_str(&json).expect("deserialize");
@@ -92,6 +94,7 @@ fn optional_fields_are_omitted_when_none() {
         frames: vec![],
         phase: None,
         test: None,
+        totals: Default::default(),
     };
     let json = serde_json::to_value(&event).expect("serialize");
     for absent in ["template_id", "source", "frames", "phase", "test"] {
