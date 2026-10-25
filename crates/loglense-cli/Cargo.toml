@@ -13,6 +13,7 @@ path = "src/main.rs"
 clap.workspace = true
 loglense-core = { path = "../loglense-core" }
 loglense-mcp = { path = "../loglense-mcp" }
+loglense-parsers = { path = "../loglense-parsers" }
 loglense-runner = { path = "../loglense-runner" }
 loglense-store = { path = "../loglense-store" }
 serde.workspace = true

@@ -68,18 +68,18 @@ Every printed message or line is additionally capped at 4096 bytes (marked with 
 
 | Command | Purpose | Output |
 |---|---|---|
-| `parsers list` | registry contents | table: name, source (built-in/project/user), extends, loaded-or-warning |
-| `parsers test <pack.toml>` | dry-run a pack (or `--parser <name>` chain) against `--sample <file>` | events it would emit + `N lines unclaimed` info; exit 0 |
-| `parsers validate <pack.toml>` | load-only, all errors file:field-precise | clean/dirty verdict + error list; exit 0 when clean |
+| `parsers list` | registry contents: built-ins, user packs (`~/.config/loglense/formats.d/`), project packs (the discovered store's `formats.d/`) | table: name, source (built-in/project/user), extends, `loaded` or `broken: <error>` |
+| `parsers test [<pack.toml>]` | dry-run a pack (or `--parser <name>` chain; both → the pack is registered and the named chain runs) against `--sample <file>`; `--max` caps shown events (200) | chain order, events it would emit, and `N lines unclaimed` — lines that fell through to `generic`; exit 0 (an unloadable pack exits 2) |
+| `parsers validate <pack.toml>` | load-only: file/TOML/schema errors stop the check; otherwise the detect block and **every** rule pattern are checked, each error file:field-precise (`pack.toml:rule[id=…].pattern: …`) | clean/dirty verdict + error list; exit 0 when clean, 2 when dirty |
 
 ### 2.2 `feedback` subcommands
 
 | Command | Purpose | Output |
 |---|---|---|
 | `feedback leave <run-id>` | record an agent report (`--kind` parse-miss/false-positive/bug/feature/other · `--detail` text · optional `--line N`, `--expected <severity>`, `--snippet`) | prints feedback id `f-<ts>-<seq>` |
-| `feedback list` | open records; `--global` walks the cross-project index and marks dangling pointers as orphans | record rows |
+| `feedback list` | this project's records (`--status open\|fixed\|wontfix`, `--max` 50); `--global` walks the cross-project index and marks dangling pointers as orphans | record rows (`feedback_id`, `status`, `kind`, `run_id`, `detail` or `path`, `orphan`), `total`, `shown` |
 | `feedback show <fid>` | one record | full record |
-| `feedback promote <fid>` | copy the referenced raw lines (around the reported line ± 20) into `crates/loglense-parsers/tests/fixtures/<parser>/f-<fid>.log` + sibling `.expected.json` containing an **empty array** (fails-until-filled) | prints the exact `cargo test` command to run and reminds to fill expected |
+| `feedback promote <fid>` | copy the referenced raw lines (around the reported line ± 20; lines 1–21 when the record has no line) into `crates/loglense-parsers/tests/fixtures/<parser>/<fid>.log` + sibling `<fid>.expected.json` containing an **empty array** (fails-until-filled). The checkout is `--repo`, else `LOGLENSE_REPO`, else the working directory; `--stream out\|err` picks the spool (default: stdout when it reaches the line); `--parser` names the fixture dir when the record has none; existing fixtures are never overwritten without `--force` | prints the exact `cargo test` command to run and reminds to fill expected; a missing spool or non-checkout exits 2 naming what is missing |
 | `feedback resolve <fid>` | `--status fixed\|wontfix`, optional `--note` | updated record |
 
 ---

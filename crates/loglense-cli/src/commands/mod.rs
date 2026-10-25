@@ -2,10 +2,12 @@
 //! success; errors map through [`CliError::exit_code`].
 
 mod events;
+mod feedback;
 mod gc;
 mod init;
 mod kill;
 mod ls;
+mod parsers;
 mod run;
 mod show;
 mod tail;
@@ -40,8 +42,8 @@ pub(crate) fn execute(cli: Cli) -> Result<u8, CliError> {
         Command::Wait { run_id, timeout } => wait::wait(&ctx, &run_id, timeout),
         Command::Kill { run_id } => kill::kill(&ctx, &run_id),
         Command::Gc { max_age, max_total } => gc::gc(&ctx, max_age, max_total),
-        Command::Parsers(_) => Err(CliError::NotImplemented("parsers")),
-        Command::Feedback(_) => Err(CliError::NotImplemented("feedback")),
+        Command::Parsers(cmd) => parsers::parsers(&ctx, cmd),
+        Command::Feedback(cmd) => feedback::feedback(&ctx, cmd),
         Command::Notify(_) => Err(CliError::NotImplemented("notify")),
         Command::Mcp => {
             loglense_mcp::serve_stdio().map_err(|err| CliError::Mcp(err.to_string()))?;

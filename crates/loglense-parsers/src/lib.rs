@@ -19,13 +19,18 @@ pub mod chain;
 pub mod detect;
 pub mod pack;
 pub mod registry;
+pub mod standard;
 pub mod tools;
 pub mod traits;
 
 pub use chain::{Chain, MultiChainState};
 pub use detect::detect_from_sample;
-pub use pack::{load_pack, load_pack_dir, CompiledRule, Pack, PackError, MAX_RULES};
+pub use pack::{
+    load_pack, load_pack_dir, load_pack_dir_quiet, validate_pack, CompiledRule, Pack, PackError,
+    MAX_RULES,
+};
 pub use registry::{ParserRegistry, Registration, RegistryError, Source, GENERIC};
+pub use standard::{builtin_registry, standard_registry, BrokenPack, LoadedRegistry};
 pub use traits::{FeedOutcome, LineCtx, ParseState, Parser};
 
 // Core event model re-exports: parsers consume these types (docs/parsers.md

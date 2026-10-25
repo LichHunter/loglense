@@ -4,10 +4,9 @@
 use std::os::unix::process::{CommandExt, ExitStatusExt};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
-use std::sync::Arc;
 
 use loglense_core::Config;
-use loglense_parsers::{bases, load_pack_dir, tools, Parser, ParserRegistry, Source};
+use loglense_parsers::{standard_registry, ParserRegistry};
 use loglense_store::{read_meta, write_meta, Meta, Status};
 
 use crate::capture::run_capture;
@@ -176,29 +175,19 @@ pub(crate) fn load_config(state: &Path) -> Result<Config, loglense_core::ConfigE
     Config::load(&state.join("config.toml"), &user_config)
 }
 
-/// Builds the parser registry: built-ins first, then user packs, then
-/// project packs (docs/parsers.md §3.5); broken packs were already warned
-/// and skipped by the loader.
+/// Builds the parser registry: built-ins, then user packs, then project
+/// packs (docs/parsers.md §3.5); broken packs are warned on stderr and
+/// skipped.
 pub(crate) fn build_registry(state: &Path) -> ParserRegistry {
-    let mut registry = ParserRegistry::new();
-    bases::register(&mut registry);
-    tools::register(&mut registry);
-    if let Some(home) = std::env::var_os("HOME") {
-        let dir = Path::new(&home).join(".config/loglense/formats.d");
-        register_packs(&mut registry, &dir, Source::UserPack);
+    let user =
+        std::env::var_os("HOME").map(|home| Path::new(&home).join(".config/loglense/formats.d"));
+    let loaded = standard_registry(&state.join("formats.d"), user.as_deref());
+    for broken in &loaded.broken {
+        eprintln!(
+            "warning: skipping broken pack {}: {}",
+            broken.path.display(),
+            broken.error
+        );
     }
-    register_packs(&mut registry, &state.join("formats.d"), Source::ProjectPack);
-    registry
-}
-
-fn register_packs(registry: &mut ParserRegistry, dir: &Path, source: Source) {
-    for pack in load_pack_dir(dir)
-        .into_iter()
-        .filter_map(|(_, result)| result.ok())
-    {
-        let name = pack.name().to_string();
-        let extends = pack.extends().map(str::to_string);
-        let pack = Arc::new(pack);
-        registry.register(&name, move || Box::new((*pack).clone()), source, extends);
-    }
+    loaded.registry
 }

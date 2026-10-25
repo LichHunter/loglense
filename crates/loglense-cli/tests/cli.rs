@@ -2,99 +2,12 @@
 //! wrapped commands in an isolated project (own HOME, fake git root, no
 //! LOGLENSE_STATE_DIR).
 
-use std::path::{Path, PathBuf};
-use std::process::{Command, Output};
 use std::time::{Duration, Instant};
 
 use serde_json::Value;
 
-const BIN: &str = env!("CARGO_BIN_EXE_loglense");
-
-struct Project {
-    _tmp: tempfile::TempDir,
-    root: PathBuf,
-    home: PathBuf,
-}
-
-impl Project {
-    /// A git-root project dir (`.git/` present) with an isolated HOME.
-    fn new() -> Self {
-        let tmp = tempfile::tempdir().expect("tempdir");
-        let root = tmp.path().join("proj");
-        let home = tmp.path().join("home");
-        std::fs::create_dir_all(root.join(".git")).unwrap();
-        std::fs::create_dir_all(&home).unwrap();
-        Self {
-            _tmp: tmp,
-            root,
-            home,
-        }
-    }
-
-    fn cmd(&self, args: &[&str]) -> Output {
-        self.cmd_in(&self.root, args)
-    }
-
-    fn cmd_in(&self, dir: &Path, args: &[&str]) -> Output {
-        Command::new(BIN)
-            .args(args)
-            .current_dir(dir)
-            .env("HOME", &self.home)
-            .env_remove("LOGLENSE_STATE_DIR")
-            .output()
-            .expect("loglense runs")
-    }
-
-    /// `--json` invocation that must exit `code`; returns parsed stdout.
-    fn json(&self, args: &[&str], code: i32) -> Value {
-        let mut full = vec!["--json"];
-        full.extend_from_slice(args);
-        let out = self.cmd(&full);
-        assert_eq!(
-            out.status.code(),
-            Some(code),
-            "{args:?}: {}",
-            describe(&out)
-        );
-        serde_json::from_slice(&out.stdout).unwrap_or_else(|err| {
-            panic!("{args:?}: stdout is not JSON ({err}): {}", describe(&out))
-        })
-    }
-
-    /// Starts `cmd` via `run --json`; returns the run id.
-    fn start(&self, cmd: &[&str]) -> String {
-        let mut args = vec!["run", "--"];
-        args.extend_from_slice(cmd);
-        self.json(&args, 0)["run_id"]
-            .as_str()
-            .expect("run_id")
-            .to_string()
-    }
-
-    /// Starts `cmd` and waits for it; returns the run id.
-    fn finished(&self, cmd: &[&str]) -> String {
-        let id = self.start(cmd);
-        let out = self.cmd(&["wait", &id, "--timeout", "20"]);
-        assert_ne!(out.status.code(), Some(124), "{}", describe(&out));
-        id
-    }
-}
-
-fn describe(out: &Output) -> String {
-    format!(
-        "exit {:?}\nstdout: {}\nstderr: {}",
-        out.status.code(),
-        String::from_utf8_lossy(&out.stdout),
-        String::from_utf8_lossy(&out.stderr)
-    )
-}
-
-fn assert_clean_failure(out: &Output, code: i32) {
-    assert_eq!(out.status.code(), Some(code), "{}", describe(out));
-    let stderr = String::from_utf8_lossy(&out.stderr);
-    assert!(!stderr.contains("panicked"), "no panic: {stderr}");
-    assert!(!stderr.trim().is_empty(), "an error message is printed");
-}
+mod common;
+use common::{assert_clean_failure, describe, Project};
 
 #[test]
 fn version_flag_prints_name_and_version() {
@@ -393,9 +306,7 @@ fn gc_reports_and_unimplemented_suites_exit_2() {
     assert_eq!(gc["runs_removed"], 0, "fresh runs are within retention");
     let gc = project.json(&["gc", "--max-total", "0"], 0);
     assert_eq!(gc["runs_removed"], 1);
-    for verb in ["parsers", "feedback", "notify"] {
-        assert_clean_failure(&project.cmd(&[verb]), 2);
-    }
+    assert_clean_failure(&project.cmd(&["notify"]), 2);
 }
 
 #[test]

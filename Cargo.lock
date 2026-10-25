@@ -519,6 +519,7 @@ dependencies = [
  "clap",
  "loglense-core",
  "loglense-mcp",
+ "loglense-parsers",
  "loglense-runner",
  "loglense-store",
  "rmcp",

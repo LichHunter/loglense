@@ -61,13 +61,21 @@ impl MultiChainState {
     /// claimer's events (possibly none — a buffered block line) are
     /// returned.
     pub fn feed(&mut self, line: &str, ctx: &LineCtx) -> Vec<Event> {
-        for state in self.lane(ctx.stream).iter_mut() {
+        self.feed_traced(line, ctx).0
+    }
+
+    /// [`feed`](Self::feed) that also reports which chain member (index in
+    /// [`Chain::parser_names`] order) claimed the line — `None` when no
+    /// member did. Pack authoring uses it to count lines that fell through
+    /// to the `generic` fallback.
+    pub fn feed_traced(&mut self, line: &str, ctx: &LineCtx) -> (Vec<Event>, Option<usize>) {
+        for (index, state) in self.lane(ctx.stream).iter_mut().enumerate() {
             match state.feed(line, ctx) {
-                FeedOutcome::Claimed(events) => return events,
+                FeedOutcome::Claimed(events) => return (events, Some(index)),
                 FeedOutcome::Passed => continue,
             }
         }
-        Vec::new()
+        (Vec::new(), None)
     }
 
     /// End-of-stream flush: every state that may hold an open partial block

@@ -313,6 +313,18 @@ pub fn load_pack(path: &Path) -> Result<Pack, PackError> {
 /// kills a run (docs/parsers.md §3.4). Per-file results are returned so
 /// `parsers validate` can report them verbatim.
 pub fn load_pack_dir(dir: &Path) -> Vec<(PathBuf, Result<Pack, PackError>)> {
+    let results = load_pack_dir_quiet(dir);
+    for (path, result) in &results {
+        if let Err(err) = result {
+            eprintln!("warning: skipping broken pack {}: {err}", path.display());
+        }
+    }
+    results
+}
+
+/// [`load_pack_dir`] without the stderr warnings — for callers that report
+/// broken packs themselves (`parsers list`).
+pub fn load_pack_dir_quiet(dir: &Path) -> Vec<(PathBuf, Result<Pack, PackError>)> {
     let Ok(read_dir) = std::fs::read_dir(dir) else {
         return Vec::new();
     };
@@ -326,12 +338,56 @@ pub fn load_pack_dir(dir: &Path) -> Vec<(PathBuf, Result<Pack, PackError>)> {
         .into_iter()
         .map(|path| {
             let result = load_pack(&path);
-            if let Err(err) = &result {
-                eprintln!("warning: skipping broken pack {}: {err}", path.display());
-            }
             (path, result)
         })
         .collect()
+}
+
+/// `parsers validate`: every error in one pack, not just the first. File,
+/// TOML, schema and rule-count errors stop the check (nothing further can
+/// be read reliably); after those, the detect block and every rule pattern
+/// are checked and all their failures are returned, each naming file, rule
+/// id and field. Empty means the pack is valid.
+pub fn validate_pack(path: &Path) -> Vec<PackError> {
+    let file = path.display().to_string();
+    let text = match std::fs::read_to_string(path) {
+        Ok(text) => text,
+        Err(source) => return vec![PackError::Io { file, source }],
+    };
+    let raw: PackToml = match toml::from_str(&text) {
+        Ok(raw) => raw,
+        Err(source) => return vec![PackError::Parse { file, source }],
+    };
+    if raw.schema != SCHEMA_VERSION {
+        return vec![PackError::UnsupportedSchema {
+            file,
+            found: raw.schema,
+        }];
+    }
+    if raw.rule.len() > MAX_RULES {
+        return vec![PackError::TooManyRules {
+            file,
+            count: raw.rule.len(),
+        }];
+    }
+    let mut errors = Vec::new();
+    if let Some(detect) = &raw.detect {
+        if detect.min_score < 1 {
+            errors.push(PackError::MinScore {
+                file: file.clone(),
+                found: detect.min_score,
+            });
+        }
+        if let Err(err) = compile(&file, None, &detect.pattern) {
+            errors.push(err);
+        }
+    }
+    for rule in &raw.rule {
+        if let Err(err) = compile(&file, Some(&rule.id), &rule.pattern) {
+            errors.push(err);
+        }
+    }
+    errors
 }
 
 /// Compile one pattern at load; rule patterns get the `rule[id=…].pattern`

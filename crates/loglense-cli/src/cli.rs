@@ -93,12 +93,12 @@ pub(crate) enum Command {
         #[arg(long, value_name = "MB")]
         max_total: Option<u64>,
     },
-    /// Parser authoring tools (not implemented yet).
-    #[command(hide = true)]
-    Parsers(Pending),
-    /// Agent feedback tools (not implemented yet).
-    #[command(hide = true)]
-    Feedback(Pending),
+    /// Parser authoring: list modules, dry-run or validate TOML packs.
+    #[command(subcommand)]
+    Parsers(ParsersCmd),
+    /// Agent feedback: record parser problems, triage, promote to fixtures.
+    #[command(subcommand)]
+    Feedback(FeedbackCmd),
     /// Completion ping adapters (not implemented yet).
     #[command(hide = true)]
     Notify(Pending),
@@ -131,6 +131,141 @@ pub(crate) struct EventsArgs {
     /// Show at most this many events (default: config, 50).
     #[arg(long, value_parser = clap::value_parser!(u64).range(1..))]
     pub max: Option<u64>,
+}
+
+#[derive(Debug, Subcommand)]
+pub(crate) enum ParsersCmd {
+    /// Registered parsers: built-ins, user and project packs.
+    List,
+    /// Dry-run a pack (or a registered parser's chain) over a sample log.
+    Test {
+        /// Pack file to load on top of the registry.
+        pack: Option<PathBuf>,
+        /// Chain to run (default: the pack's name).
+        #[arg(long)]
+        parser: Option<String>,
+        /// Sample log file.
+        #[arg(long)]
+        sample: PathBuf,
+        /// Show at most this many events.
+        #[arg(long, default_value_t = 200, value_parser = clap::value_parser!(u64).range(1..))]
+        max: u64,
+    },
+    /// Load-only check of a pack; reports every error with file and field.
+    Validate {
+        /// Pack file.
+        pack: PathBuf,
+    },
+}
+
+#[derive(Debug, Subcommand)]
+pub(crate) enum FeedbackCmd {
+    /// Record a report about a run's parsing.
+    Leave {
+        /// Run id the report is about.
+        run_id: String,
+        /// Report kind.
+        #[arg(long, value_enum)]
+        kind: FeedbackKindArg,
+        /// What was observed.
+        #[arg(long)]
+        detail: String,
+        /// Raw output line the report points at.
+        #[arg(long)]
+        line: Option<u64>,
+        /// Severity the line should have had.
+        #[arg(long, value_enum)]
+        expected: Option<SeverityArg>,
+        /// Quoted log fragment.
+        #[arg(long)]
+        snippet: Option<String>,
+    },
+    /// Feedback records of this project (or every project with --global).
+    List {
+        /// Only records in this state.
+        #[arg(long, value_enum)]
+        status: Option<FeedbackStatusArg>,
+        /// Walk the cross-project index instead; dangling pointers show as
+        /// orphans.
+        #[arg(long)]
+        global: bool,
+        /// Show at most this many records.
+        #[arg(long, default_value_t = 50, value_parser = clap::value_parser!(u64).range(1..))]
+        max: u64,
+    },
+    /// One record in full.
+    Show {
+        /// Feedback id (`f-<ts>-<seq>`).
+        fid: String,
+    },
+    /// Copy the reported raw lines (±20) into a golden fixture whose
+    /// expected events are empty — the test fails until filled in.
+    Promote {
+        /// Feedback id.
+        fid: String,
+        /// loglense source checkout to write fixtures into (default:
+        /// LOGLENSE_REPO, else the current directory).
+        #[arg(long)]
+        repo: Option<PathBuf>,
+        /// Spool the line refers to (default: stdout when it has that line).
+        #[arg(long, value_enum, default_value_t = PromoteStream::Auto)]
+        stream: PromoteStream,
+        /// Fixture directory when the record names no parser.
+        #[arg(long)]
+        parser: Option<String>,
+        /// Overwrite an existing fixture of the same name.
+        #[arg(long)]
+        force: bool,
+    },
+    /// Close a record as fixed or won't-fix.
+    Resolve {
+        /// Feedback id.
+        fid: String,
+        /// Final state.
+        #[arg(long, value_enum)]
+        status: ResolveStatus,
+        /// Maintainer note.
+        #[arg(long)]
+        note: Option<String>,
+    },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub(crate) enum FeedbackKindArg {
+    ParseMiss,
+    FalsePositive,
+    Bug,
+    Feature,
+    Other,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub(crate) enum SeverityArg {
+    Error,
+    Warning,
+    Notice,
+    Info,
+    Debug,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub(crate) enum FeedbackStatusArg {
+    Open,
+    Fixed,
+    Wontfix,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub(crate) enum ResolveStatus {
+    Fixed,
+    Wontfix,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub(crate) enum PromoteStream {
+    Auto,
+    Out,
+    Err,
 }
 
 /// Placeholder argument sink for subcommands later tasks implement.
